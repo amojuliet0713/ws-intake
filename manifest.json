@@ -1,0 +1,48 @@
+{
+  "$schema": "https://developer.microsoft.com/en-us/json-schemas/teams/v1.16/MicrosoftTeams.schema.json",
+  "manifestVersion": "1.16",
+  "version": "1.0.0",
+  "id": "4c590f15-4af0-4065-826e-8b6f3e286695",
+  "packageName": "com.williamsseemen.intake",
+  "developer": {
+    "name": "Williams & Seemen, APLC",
+    "websiteUrl": "https://latrialteam.com",
+    "privacyUrl": "https://latrialteam.com/privacy",
+    "termsOfUseUrl": "https://latrialteam.com/terms"
+  },
+  "name": {
+    "short": "Intake System",
+    "full": "Williams & Seemen Employment Intake System"
+  },
+  "description": {
+    "short": "AI-powered employment law intake form",
+    "full": "Auto-populate the W&S employment intake questionnaire from uploaded documents using Claude AI. Review, analyze, and download filled PDF intake forms."
+  },
+  "icons": {
+    "color": "color.png",
+    "outline": "outline.png"
+  },
+  "accentColor": "#1a1a3e",
+  "staticTabs": [
+    {
+      "entityId": "intake",
+      "name": "New Intake",
+      "contentUrl": "https://YOUR-APP-URL/",
+      "websiteUrl": "https://YOUR-APP-URL/",
+      "scopes": ["personal", "team", "groupChat"]
+    }
+  ],
+  "configurableTabs": [
+    {
+      "configurationUrl": "https://YOUR-APP-URL/teams-config",
+      "canUpdateConfiguration": true,
+      "scopes": ["team", "groupChat"]
+    }
+  ],
+  "permissions": ["identity", "messageTeamMembers"],
+  "validDomains": ["YOUR-APP-DOMAIN"],
+  "webApplicationInfo": {
+    "id": "4c590f15-4af0-4065-826e-8b6f3e286695",
+    "resource": "https://YOUR-APP-URL"
+  }
+}

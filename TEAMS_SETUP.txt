@@ -1,0 +1,70 @@
+═══════════════════════════════════════════════════════════════
+ WILLIAMS & SEEMEN, APLC — INTAKE SYSTEM
+ Microsoft Teams Deployment Guide
+═══════════════════════════════════════════════════════════════
+
+There are TWO ways to add this to Teams:
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+ OPTION A — QUICK (Localhost + Teams on the same computer)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+Best for: One person testing it before rolling out to everyone.
+
+ 1. Install Node.js from https://nodejs.org (LTS version)
+ 2. Open .env and paste your Anthropic API key
+ 3. Double-click START.bat
+ 4. The app runs at http://localhost:3000
+ 5. In Teams → open any channel → + Add a tab
+    → Website → paste http://localhost:3000
+    ⚠ Only works on YOUR computer while START.bat is running
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+ OPTION B — FULL TEAMS APP (Everyone on staff can use it)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+Best for: Whole firm access from any computer, anywhere.
+
+ STEP 1 — Host the app on Azure (Microsoft's cloud, ~$10/mo)
+ ────────────────────────────────────────────────────────────
+ a) Go to portal.azure.com → sign in with your Microsoft account
+ b) Click "Create a resource" → "Web App"
+ c) Settings:
+    - Name: ws-intake (this becomes ws-intake.azurewebsites.net)
+    - Runtime stack: Node 20 LTS
+    - Region: West US 2 (or closest to you)
+    - Plan: B1 Basic (~$13/mo)
+ d) Click Review + Create → Create
+ e) Once created, go to the Web App → Configuration → App Settings
+    Add: ANTHROPIC_API_KEY = sk-ant-api03-your-key-here
+ f) Go to Deployment Center → Local Git or ZIP deploy
+    Upload this entire folder as a ZIP
+
+ Alternative: Railway.app (easier, ~$5/mo)
+    - Go to railway.app → New Project → Deploy from GitHub
+    - Or drag-and-drop this folder
+    - Add ANTHROPIC_API_KEY in Variables tab
+
+ STEP 2 — Update the Teams manifest with your URL
+ ────────────────────────────────────────────────────────────
+ Open teams-package/manifest.json and replace every instance of:
+   YOUR-APP-URL  →  ws-intake.azurewebsites.net  (or your URL)
+   YOUR-APP-DOMAIN  →  ws-intake.azurewebsites.net
+
+ STEP 3 — Upload the Teams app to your organization
+ ────────────────────────────────────────────────────────────
+ a) Zip just the teams-package folder contents:
+    manifest.json + color.png + outline.png → intake-teams-app.zip
+ b) In Microsoft Teams → Apps (left sidebar)
+    → Manage your apps → Upload an app
+    → Upload a custom app → select intake-teams-app.zip
+ c) Click Add → choose your channel or team
+ d) A new "Intake System" tab appears for everyone!
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+ NOTES
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+ • The API key lives on the server — staff never see or need it
+ • Cost: ~$0.01–0.03 per intake extraction
+ • $10 in Anthropic credits = 300–1000 intakes
+ • Need help? Ask your IT admin or reply to this conversation
+
+═══════════════════════════════════════════════════════════════
