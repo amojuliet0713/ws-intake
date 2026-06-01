@@ -3,628 +3,460 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Williams &amp; Seemen, APLC — Employment Intake System</title>
+<title>Williams &amp; Seemen APLC - Intake</title>
 <script src="/react.min.js"></script>
 <script src="/react-dom.min.js"></script>
 <script src="/babel.min.js"></script>
 <script src="/pdf-lib.min.js"></script>
 <style>
-*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
-:root{--navy:#1a1a3e;--navy-mid:#2a2a5e;--red:#c0392b;--bg:#f4f6f9;--card:#ffffff;--border:#dde1e9;--text:#1a1a2e;--muted:#6b7280;--success:#166534;--success-bg:#dcfce7;--warn:#92400e;--warn-bg:#fef3c7}
-body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;background:var(--bg);color:var(--text);min-height:100vh}
+*{box-sizing:border-box;margin:0;padding:0}
+:root{--nv:#1a1a3e;--re:#c0392b;--bg:#f4f6f9;--ca:#fff;--bd:#dde1e9;--tx:#1a1a2e;--mu:#6b7280;--sg:#166534;--sb:#dcfce7;--wa:#92400e;--wb:#fef3c7}
+body{font-family:-apple-system,sans-serif;background:var(--bg);color:var(--tx);min-height:100vh}
 #root{min-height:100vh}
-.topbar{background:var(--navy);color:white;padding:0 2rem;height:60px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:100;box-shadow:0 2px 8px rgba(0,0,0,0.3)}
-.topbar-brand{display:flex;align-items:center;gap:12px}
-.topbar-logo{width:36px;height:36px;background:var(--red);border-radius:6px;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;color:white;line-height:1.2;text-align:center}
-.topbar-title{font-size:15px;font-weight:600;letter-spacing:.02em}
-.topbar-sub{font-size:11px;opacity:.7}
-.main{max-width:1100px;margin:0 auto;padding:2rem}
-.step-bar{display:flex;align-items:center;margin-bottom:2rem;background:white;border-radius:12px;overflow:hidden;border:1px solid var(--border)}
-.step{flex:1;display:flex;align-items:center;gap:10px;padding:14px 20px;position:relative}
-.step+.step::before{content:"";position:absolute;left:0;top:50%;transform:translateY(-50%);width:1px;height:60%;background:var(--border)}
-.step.active{background:var(--navy);color:white}
-.step.done{background:#f0fdf4;color:var(--success)}
-.step.inactive{color:var(--muted)}
-.step-num{width:26px;height:26px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;flex-shrink:0}
-.step.active .step-num{background:rgba(255,255,255,0.25);color:white}
-.step.done .step-num{background:var(--success-bg);color:var(--success)}
-.step.inactive .step-num{background:#e5e7eb;color:var(--muted)}
-.step-label{font-size:13px;font-weight:500}
-.card{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:1.5rem;margin-bottom:1.5rem}
-.card-header{display:flex;align-items:center;gap:10px;margin-bottom:1.25rem;padding-bottom:1rem;border-bottom:1px solid var(--border)}
-.card-icon{width:32px;height:32px;background:var(--navy);border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:14px}
-.section-heading{font-size:14px;font-weight:700;color:var(--navy);text-transform:uppercase;letter-spacing:.08em}
-.section-sub{font-size:12px;color:var(--muted);margin-top:2px}
-.field-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px}
-.col-span-2{grid-column:span 2}
-.field{display:flex;flex-direction:column;gap:5px}
-.field label{font-size:12px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.05em}
-.field input,.field select,.field textarea{padding:9px 12px;border:1px solid var(--border);border-radius:8px;font-size:13px;color:var(--text);background:white;transition:border-color .15s,box-shadow .15s}
-.field input:focus,.field select:focus,.field textarea:focus{outline:none;border-color:var(--navy);box-shadow:0 0 0 3px rgba(26,26,62,.1)}
-.field textarea{min-height:90px;resize:vertical;line-height:1.5}
-.field.ai-filled input,.field.ai-filled select,.field.ai-filled textarea{border-color:#6366f1;background:#f5f3ff}
-.checkbox-section{display:grid;grid-template-columns:1fr 1fr;gap:8px}
-.check-row{display:flex;align-items:center;gap:8px;padding:8px 12px;border:1px solid var(--border);border-radius:8px;cursor:pointer;font-size:13px;transition:background .1s}
-.check-row:hover{background:#f8fafc}
-.check-row input[type=checkbox]{width:15px;height:15px;accent-color:var(--navy)}
-.radio-inline{display:flex;gap:16px;flex-wrap:wrap;padding:9px 0}
-.radio-inline label{display:flex;align-items:center;gap:6px;font-size:13px;cursor:pointer;color:var(--text);font-weight:normal;text-transform:none;letter-spacing:0}
-.radio-inline input[type=radio]{width:14px;height:14px;accent-color:var(--navy)}
-.btn{padding:9px 20px;border-radius:8px;font-size:13px;font-weight:600;cursor:pointer;border:none;display:inline-flex;align-items:center;gap:8px;transition:all .15s}
-.btn-navy{background:var(--navy);color:white}
-.btn-navy:hover{background:var(--navy-mid)}
-.btn-outline{background:white;color:var(--navy);border:1.5px solid var(--navy)}
-.btn-outline:hover{background:#f0f0f8}
-.btn-green{background:#166534;color:white}
-.btn-lg{padding:12px 28px;font-size:15px;border-radius:10px}
-.btn:disabled{opacity:.5;cursor:not-allowed}
-.drop-zone{border:2px dashed var(--border);border-radius:12px;padding:3rem 2rem;text-align:center;cursor:pointer;transition:border-color .2s,background .2s}
-.drop-zone:hover,.drop-zone.drag-over{border-color:var(--navy);background:#f0f0f8}
-.drop-zone-icon{font-size:48px;margin-bottom:1rem}
-.drop-zone-title{font-size:18px;font-weight:600;color:var(--navy);margin-bottom:8px}
-.drop-zone-sub{font-size:14px;color:var(--muted)}
-.alert{padding:12px 16px;border-radius:8px;font-size:13px;margin-bottom:1rem;display:flex;align-items:flex-start;gap:10px}
-.alert-info{background:#eff6ff;border:1px solid #bfdbfe;color:#1e40af}
-.alert-success{background:var(--success-bg);border:1px solid #86efac;color:var(--success)}
-.alert-warn{background:var(--warn-bg);border:1px solid #fcd34d;color:var(--warn)}
-.spinner{display:inline-block;width:18px;height:18px;border:2px solid rgba(255,255,255,.3);border-top-color:white;border-radius:50%;animation:spin .7s linear infinite}
+.tb{background:var(--nv);color:#fff;padding:0 2rem;height:60px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:100}
+.tl{width:36px;height:36px;background:var(--re);border-radius:6px;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;color:#fff;text-align:center}
+.mn{max-width:1100px;margin:0 auto;padding:2rem}
+.sb2{display:flex;margin-bottom:2rem;background:#fff;border-radius:12px;overflow:hidden;border:1px solid var(--bd)}
+.st{flex:1;display:flex;align-items:center;gap:10px;padding:14px 16px;position:relative;color:var(--mu)}
+.st+.st::before{content:"";position:absolute;left:0;top:50%;transform:translateY(-50%);width:1px;height:60%;background:var(--bd)}
+.st.ac{background:var(--nv);color:#fff}
+.st.dn{background:#f0fdf4;color:var(--sg)}
+.sn{width:24px;height:24px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;flex-shrink:0;background:#e5e7eb;color:var(--mu)}
+.st.ac .sn{background:rgba(255,255,255,.25);color:#fff}
+.st.dn .sn{background:var(--sb);color:var(--sg)}
+.sl{font-size:13px;font-weight:500}
+.cd{background:var(--ca);border:1px solid var(--bd);border-radius:12px;padding:1.5rem;margin-bottom:1.5rem}
+.ch{display:flex;align-items:center;gap:10px;margin-bottom:1.25rem;padding-bottom:1rem;border-bottom:1px solid var(--bd)}
+.ci{width:32px;height:32px;background:var(--nv);border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:14px}
+.ht{font-size:14px;font-weight:700;color:var(--nv);text-transform:uppercase;letter-spacing:.08em}
+.hs{font-size:12px;color:var(--mu);margin-top:2px}
+.fg{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+.c2{grid-column:span 2}
+.fd{display:flex;flex-direction:column;gap:5px}
+.fd label{font-size:12px;font-weight:600;color:var(--mu);text-transform:uppercase;letter-spacing:.05em}
+.fd input,.fd select,.fd textarea{padding:9px 12px;border:1px solid var(--bd);border-radius:8px;font-size:13px;color:var(--tx);background:#fff}
+.fd input:focus,.fd select:focus,.fd textarea:focus{outline:none;border-color:var(--nv)}
+.fd textarea{min-height:80px;resize:vertical}
+.ai .fd input,.ai .fd select,.ai .fd textarea{border-color:#6366f1;background:#f5f3ff}
+.cs{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.cr{display:flex;align-items:center;gap:8px;padding:8px 12px;border:1px solid var(--bd);border-radius:8px;font-size:13px}
+.cr input{width:15px;height:15px;accent-color:var(--nv)}
+.ri{display:flex;gap:16px;flex-wrap:wrap;padding:8px 0}
+.ri label{display:flex;align-items:center;gap:6px;font-size:13px;cursor:pointer;font-weight:normal;text-transform:none;letter-spacing:0}
+.ri input{width:14px;height:14px;accent-color:var(--nv)}
+.bn{padding:9px 20px;border-radius:8px;font-size:13px;font-weight:600;cursor:pointer;border:none;display:inline-flex;align-items:center;gap:8px}
+.pn{background:var(--nv);color:#fff}
+.pn:hover{background:#2a2a5e}
+.po{background:#fff;color:var(--nv);border:1.5px solid var(--nv)}
+.po:hover{background:#f0f0f8}
+.pg{background:#166534;color:#fff}
+.pl{padding:12px 28px;font-size:15px;border-radius:10px}
+.bn:disabled{opacity:.5;cursor:not-allowed}
+.dz{border:2px dashed var(--bd);border-radius:12px;padding:3rem 2rem;text-align:center;cursor:pointer}
+.dz:hover{border-color:var(--nv);background:#f0f0f8}
+.di{font-size:48px;margin-bottom:1rem}
+.dt{font-size:18px;font-weight:600;color:var(--nv);margin-bottom:8px}
+.ds{font-size:14px;color:var(--mu)}
+.al{padding:12px 16px;border-radius:8px;font-size:13px;margin-bottom:1rem;display:flex;gap:10px}
+.ai2{background:#eff6ff;border:1px solid #bfdbfe;color:#1e40af}
+.as{background:var(--sb);border:1px solid #86efac;color:var(--sg)}
+.aw{background:var(--wb);border:1px solid #fcd34d;color:var(--wa)}
+.sp{display:inline-block;width:18px;height:18px;border:2px solid rgba(255,255,255,.3);border-top-color:#fff;border-radius:50%;animation:spin .7s linear infinite}
 @keyframes spin{to{transform:rotate(360deg)}}
-.verdict-card{border-radius:12px;padding:1.5rem;margin-bottom:1.5rem}
-.verdict-accept{background:var(--success-bg);border:1.5px solid #86efac}
-.verdict-decline{background:#fee2e2;border:1.5px solid #fca5a5}
-.verdict-review{background:var(--warn-bg);border:1.5px solid #fcd34d}
-.verdict-title{font-size:20px;font-weight:700;margin-bottom:6px}
-.verdict-reason{font-size:14px;line-height:1.6}
-.score-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin:1rem 0}
-.score-box{background:white;border:1px solid var(--border);border-radius:10px;padding:14px;text-align:center}
-.score-num{font-size:22px;font-weight:700}
-.score-label{font-size:11px;color:var(--muted);margin-top:2px}
-.green-text{color:#166534}.red-text{color:#991b1b}.amber-text{color:#92400e}
-.nav-bottom{display:flex;justify-content:space-between;align-items:center;padding-top:1.5rem;border-top:1px solid var(--border);margin-top:1rem}
-.tag{display:inline-block;background:#ede9fe;color:#5b21b6;border-radius:6px;padding:2px 8px;font-size:11px;font-weight:600;margin-left:6px}
-.badge{display:inline-flex;align-items:center;gap:4px;padding:3px 10px;border-radius:20px;font-size:11px;font-weight:600}
-.badge-purple{background:#ede9fe;color:#5b21b6}
-.summary-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:1.5rem}
-.summary-item{display:flex;gap:8px;font-size:13px;padding:8px 12px;background:#f8fafc;border-radius:8px;border:1px solid var(--border)}
-.summary-label{color:var(--muted);min-width:100px}
-.summary-value{font-weight:500}
-@media(max-width:700px){.field-grid,.score-grid,.summary-grid{grid-template-columns:1fr}.col-span-2{grid-column:span 1}.main{padding:1rem}.step-label{font-size:11px}}
+.vc{border-radius:12px;padding:1.5rem;margin-bottom:1.5rem}
+.va{background:var(--sb);border:1.5px solid #86efac}
+.vd{background:#fee2e2;border:1.5px solid #fca5a5}
+.vr{background:var(--wb);border:1.5px solid #fcd34d}
+.sg2{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin:1rem 0}
+.sb3{background:#fff;border:1px solid var(--bd);border-radius:10px;padding:14px;text-align:center}
+.sn2{font-size:22px;font-weight:700}
+.sl2{font-size:11px;color:var(--mu);margin-top:2px}
+.gt{color:#166534}.rt{color:#991b1b}.at{color:#92400e}
+.nb{display:flex;justify-content:space-between;align-items:center;padding-top:1.5rem;border-top:1px solid var(--bd);margin-top:1rem}
+.tg{display:inline-block;background:#ede9fe;color:#5b21b6;border-radius:6px;padding:2px 8px;font-size:11px;font-weight:600;margin-left:6px}
+.bg{display:inline-flex;align-items:center;gap:4px;padding:3px 10px;border-radius:20px;font-size:11px;font-weight:600;background:#ede9fe;color:#5b21b6}
+.lw{display:flex;border:1px solid var(--bd);border-radius:8px;overflow:hidden;background:#fff}
+.ln{background:#f4f6f9;border-right:1px solid var(--bd);padding:9px 8px;font-family:monospace;font-size:12px;color:#9ca3af;line-height:1.6;min-width:36px;text-align:right;user-select:none;white-space:pre}
+.lt{font-family:monospace;font-size:12px;border:none;outline:none;padding:9px 12px;flex:1;resize:vertical;line-height:1.6;min-height:180px}
+.fi{font-size:11px;color:var(--mu);margin-top:4px}
+@media(max-width:700px){.fg,.sg2{grid-template-columns:1fr}.c2{grid-column:span 1}.mn{padding:1rem}.sl{font-size:11px}}
 </style>
 </head>
 <body>
 <div id="root"></div>
 <script type="text/babel">
-const { useState, useRef } = React;
+const {useState,useRef}=React;
 
-const EMPTY_FORM = {
-  intakeDate:"",intakeMethod:"",intakeStaff:"",referralSource:"",attorneyAssigned:"",followUpDate:"",
-  fullName:"",preferredName:"",dob:"",address:"",primaryPhone:"",altPhone:"",email:"",
-  bestContact:"",preferredLanguage:"",emergencyContact:"",priorAttorney:"",priorAttorneyYN:"",
-  defendant:"",isGovtEmployer:"",jobTitle:"",payRate:"",atWillOrContract:"",
-  startDate:"",endDate:"",supervisor:"",employmentStatus:"",terminationDate:"",
-  terminationEmployerReason:"",terminationClientBelief:"",severanceOffered:"",arbitrationAgreement:"",unionMember:"",
-  discriminationBelief:"",discriminationClasses:[],discriminationEvidence:"",oralAnimus:"",writtenAnimus:"",
-  sexualHarassment:"",protectedClassHarassment:"",harassmentDetails:"",
-  hasDisability:"",disabilityNature:"",disabilityDate:"",accommodationRequested:"",accommodationGranted:"",
-  adverseActionDisability:"",leaveTypes:[],leaveReason:"",leaveGranted:"",terminatedAfterLeave:"",
-  exemptStatus:"",hourlyOrSalary:"",mealRestBreaks:"",mealRestDetails:"",
-  overtimePaid:"",overtimeDetails:"",finalPaycheckTimely:"",tipsIssues:"",
-  lostWages:"",lostBenefits:"",postTermEarnings:"",medicalTreatment:"",emotionalDistress:"",
-  witnessNames:"",evidenceDocs:[],audioRecordings:"",socialMedia:"",
-  credibilityNotes:"",redFlags:"",caseStrengths:"",actionItems:"",recommendation:"",
-  _verdict:"",_verdictReason:"",_meritScore:"",_damagesPotential:"",_riskLevel:"",_solUrgency:"",
-  _claimsAnalysis:"",_solNote:"",_strengths:[],_concerns:[],_nextSteps:[],
-};
+const EF={intakeDate:"",intakeMethod:"",intakeStaff:"",referralSource:"",attorneyAssigned:"",followUpDate:"",fullName:"",preferredName:"",dob:"",address:"",primaryPhone:"",altPhone:"",email:"",bestContact:"",preferredLanguage:"",emergencyContact:"",priorAttorney:"",priorAttorneyYN:"",defendant:"",isGovtEmployer:"",jobTitle:"",payRate:"",atWillOrContract:"",startDate:"",endDate:"",supervisor:"",employmentStatus:"",terminationDate:"",terminationEmployerReason:"",terminationClientBelief:"",severanceOffered:"",arbitrationAgreement:"",unionMember:"",discriminationBelief:"",discriminationClasses:[],discriminationEvidence:"",oralAnimus:"",writtenAnimus:"",sexualHarassment:"",harassmentDetails:"",hasDisability:"",disabilityNature:"",disabilityDate:"",accommodationRequested:"",accommodationGranted:"",adverseActionDisability:"",leaveTypes:[],leaveReason:"",leaveGranted:"",terminatedAfterLeave:"",exemptStatus:"",hourlyOrSalary:"",mealRestBreaks:"",mealRestDetails:"",overtimePaid:"",overtimeDetails:"",finalPaycheckTimely:"",lostWages:"",lostBenefits:"",medicalTreatment:"",emotionalDistress:"",witnessNames:"",evidenceDocs:[],credibilityNotes:"",redFlags:"",caseStrengths:"",actionItems:"",recommendation:"",_verdict:"",_verdictReason:"",_meritScore:"",_damagesPotential:"",_riskLevel:"",_solUrgency:"",_claimsAnalysis:"",_solNote:"",_strengths:[],_concerns:[],_nextSteps:[]};
 
-const DISC_CLASSES = ["Race","Color","National Origin/Ancestry","Religion","Sex/Gender","Sexual Orientation","Gender Identity","Age (40+)","Disability/Medical","Genetic Info","Marital Status","Pregnancy","Military/Veteran","Other"];
-const LEAVE_TYPES = ["FMLA","CFRA","PDL (Pregnancy)","CA Paid Sick Leave","Paid Family Leave","Bereavement Leave","Crime Victim Leave","Workers Comp Leave","Other"];
-const EVIDENCE_DOCS = ["Offer letter","Employee handbook","Arbitration agreement","Pay stubs","W-2/1099","Performance reviews","Written warnings","Emails","Text messages","Internal complaints","Termination letter","Medical records","Therapy records","Photos","Social media screenshots","Recordings"];
+const DC=["Race","Color","National Origin","Religion","Sex/Gender","Sexual Orientation","Gender Identity","Age (40+)","Disability","Genetic Info","Marital Status","Pregnancy","Military","Other"];
+const LT=["FMLA","CFRA","PDL","CA Paid Sick Leave","Paid Family Leave","Bereavement","Workers Comp","Other"];
+const ED=["Offer letter","Employee handbook","Arbitration agreement","Pay stubs","Performance reviews","Written warnings","Emails","Text messages","Termination letter","Medical records","Recordings","Photos"];
 
-function Field({label,name,form,setForm,type="text",options=[],rows=3,aiField=false,placeholder=""}){
-  const val=form[name]??"";
-  const cls="field"+(aiField&&val?" ai-filled":"");
-  const update=e=>setForm(f=>({...f,[name]:e.target.value}));
+function pj(raw){
+  let s=raw.replace(/```json/g,"").replace(/```/g,"").trim();
+  const a=s.indexOf("{"),b=s.lastIndexOf("}");
+  if(a!==-1&&b!==-1)s=s.slice(a,b+1);
+  try{return JSON.parse(s);}
+  catch(e){s=s.replace(/,(\s*[}\]])/g,"$1");return JSON.parse(s);}
+}
+
+function F({l,n,f,sf,t="text",o=[],r=2,ai=false,c2=false}){
+  const v=f[n]||"";
+  const u=e=>sf(x=>({...x,[n]:e.target.value}));
   return(
-    <div className={cls}>
-      <label>{label}{aiField&&val?<span className="tag">AI</span>:null}</label>
-      {type==="textarea"?<textarea rows={rows} value={val} onChange={update} placeholder={placeholder}/>:
-       type==="select"?<select value={val} onChange={update}><option value="">Select...</option>{options.map(o=><option key={o} value={o}>{o}</option>)}</select>:
-       type==="radio"?<div className="radio-inline">{options.map(o=><label key={o}><input type="radio" name={name} value={o} checked={val===o} onChange={update}/>{o}</label>)}</div>:
-       <input type={type} value={val} onChange={update} placeholder={placeholder}/>}
+    <div className={"fd"+(ai&&v?" ai":"")+(c2?" c2":"")}>
+      <label>{l}{ai&&v?<span className="tg">AI</span>:null}</label>
+      {t==="ta"?<textarea rows={r} value={v} onChange={u}/>:
+       t==="sl"?<select value={v} onChange={u}><option value="">-</option>{o.map(x=><option key={x}>{x}</option>)}</select>:
+       t==="ra"?<div className="ri">{o.map(x=><label key={x}><input type="radio" name={n} value={x} checked={v===x} onChange={()=>sf(z=>({...z,[n]:x}))}/>{x}</label>)}</div>:
+       <input type={t} value={v} onChange={u}/>}
     </div>
   );
 }
 
-function CheckGroup({label,name,form,setForm,options}){
-  const vals=form[name]||[];
-  const toggle=o=>{const next=vals.includes(o)?vals.filter(x=>x!==o):[...vals,o];setForm(f=>({...f,[name]:next}));};
+function CG({l,n,f,sf,o}){
+  const vs=f[n]||[];
   return(
-    <div className="field col-span-2">
-      <label>{label}</label>
-      <div className="checkbox-section">{options.map(o=><label key={o} className="check-row"><input type="checkbox" checked={vals.includes(o)} onChange={()=>toggle(o)}/>{o}</label>)}</div>
+    <div className="fd c2">
+      <label>{l}</label>
+      <div className="cs">{o.map(x=><label key={x} className="cr"><input type="checkbox" checked={vs.includes(x)} onChange={()=>sf(z=>({...z,[n]:vs.includes(x)?vs.filter(y=>y!==x):[...vs,x]}))}/>{x}</label>)}</div>
     </div>
   );
 }
 
-function StepBar({step}){
-  const steps=["Import & Extract","Contact & Employment","Claims & Evidence","Review & Analyze","Download PDF"];
+function Bar({s}){
+  const ss=["Import","Contact","Claims","Analyze","Download"];
   return(
-    <div className="step-bar">
-      {steps.map((s,i)=>(
-        <div key={i} className={"step "+(i+1===step?"active":i+1<step?"done":"inactive")}>
-          <div className="step-num">{i+1<step?"✓":i+1}</div>
-          <div className="step-label">{s}</div>
+    <div className="sb2">
+      {ss.map((x,i)=>(
+        <div key={i} className={"st "+(i+1===s?"ac":i+1<s?"dn":"")}>
+          <div className="sn">{i+1<s?"v":i+1}</div>
+          <div className="sl">{x}</div>
         </div>
       ))}
     </div>
   );
 }
 
-function Step1({onExtracted}){
-  const [text,setText]=useState("");
-  const [loading,setLoading]=useState(false);
-  const [error,setError]=useState("");
-  const [dragOver,setDragOver]=useState(false);
-  const [fileName,setFileName]=useState("");
-  const fileRef=useRef();
+function S1({onDone}){
+  const [tx,setTx]=useState("");
+  const [busy,setBusy]=useState(false);
+  const [er,setEr]=useState("");
+  const [ov,setOv]=useState(false);
+  const [fn,setFn]=useState("");
+  const rf=useRef();
+  const lns=(tx||" ").split("\n").map((_,i)=>i+1).join("\n");
 
-  const readFile=async(file)=>{
-    setFileName(file.name);setError("");
+  const loadf=async(file)=>{
+    setFn(file.name);setEr("");
     const ext=file.name.split(".").pop().toLowerCase();
-    if(ext==="txt"){const r=new FileReader();r.onload=e=>setText(e.target.result);r.readAsText(file);}
+    if(ext==="txt"){const r=new FileReader();r.onload=e=>setTx(e.target.result);r.readAsText(file);}
     else{
       try{
         const fd=new FormData();fd.append("file",file);
         const res=await fetch("/api/extract-text",{method:"POST",body:fd});
-        const data=await res.json();
-        if(!res.ok)throw new Error(data.error);
-        setText(data.text);
-      }catch(e){setError("File read error: "+e.message);}
+        const d=await res.json();
+        if(!res.ok)throw new Error(d.error);
+        setTx(d.text);
+      }catch(e){setEr("File error: "+e.message);}
     }
   };
 
-  const handleDrop=e=>{e.preventDefault();setDragOver(false);const f=e.dataTransfer.files[0];if(f)readFile(f);};
-
-  const extractWithClaude=async()=>{
-    if(!text.trim()){setError("Please upload or paste a document first.");return;}
-    setLoading(true);setError("");
+  const go=async()=>{
+    if(!tx.trim()){setEr("Please upload or paste a document.");return;}
+    setBusy(true);setEr("");
     try{
       const today=new Date().toISOString().split("T")[0];
-      const prompt="You are an expert legal intake analyst. Extract all info from this legal document into JSON. Use plain ASCII. Return ONLY a JSON object with: fullName, preferredName, dob, address, primaryPhone, altPhone, email, bestContact, preferredLanguage, emergencyContact, priorAttorney, priorAttorneyYN, defendant, isGovtEmployer, jobTitle, payRate, atWillOrContract, startDate, endDate, supervisor, employmentStatus, terminationDate, terminationEmployerReason, terminationClientBelief, severanceOffered, arbitrationAgreement, unionMember, discriminationBelief, discriminationClasses, discriminationEvidence, oralAnimus, writtenAnimus, sexualHarassment, harassmentDetails, hasDisability, disabilityNature, disabilityDate, accommodationRequested, accommodationGranted, adverseActionDisability, leaveTypes, leaveReason, leaveGranted, terminatedAfterLeave, exemptStatus, hourlyOrSalary, mealRestBreaks, mealRestDetails, overtimePaid, overtimeDetails, finalPaycheckTimely, lostWages, lostBenefits, medicalTreatment, emotionalDistress, witnessNames, evidenceDocs, credibilityNotes, redFlags, caseStrengths, actionItems, recommendation, intakeDate, intakeMethod, intakeStaff, referralSource, attorneyAssigned, followUpDate. Empty string for missing. Document: "+text.slice(0,10000);
-      if(!res.ok){const err=await res.json().catch(()=>({}));throw new Error(err.error?.message||err.error||"Server error "+res.status);}
-      const data=await res.json();
-      const raw=data.content.map(c=>c.text||"").join("");
-      const s=raw.indexOf("{");const e2=raw.lastIndexOf("}");
-      const clean=s!==-1&&e2!==-1?raw.slice(s,e2+1):raw;
-      const extracted=JSON.parse(clean);
-      onExtracted({...EMPTY_FORM,...extracted});
-    }catch(e){setError("Extraction failed: "+e.message);}
-    setLoading(false);
+      const keys="fullName,preferredName,dob,address,primaryPhone,altPhone,email,bestContact,preferredLanguage,emergencyContact,priorAttorney,priorAttorneyYN,defendant,isGovtEmployer,jobTitle,payRate,atWillOrContract,startDate,endDate,supervisor,employmentStatus,terminationDate,terminationEmployerReason,terminationClientBelief,severanceOffered,arbitrationAgreement,unionMember,discriminationBelief,discriminationClasses,discriminationEvidence,oralAnimus,writtenAnimus,sexualHarassment,harassmentDetails,hasDisability,disabilityNature,disabilityDate,accommodationRequested,accommodationGranted,adverseActionDisability,leaveTypes,leaveReason,leaveGranted,terminatedAfterLeave,exemptStatus,hourlyOrSalary,mealRestBreaks,mealRestDetails,overtimePaid,overtimeDetails,finalPaycheckTimely,lostWages,lostBenefits,medicalTreatment,emotionalDistress,witnessNames,evidenceDocs,credibilityNotes,redFlags,caseStrengths,actionItems,recommendation,intakeMethod,intakeStaff,referralSource,attorneyAssigned,followUpDate";
+      const instr="Extract legal intake info from the document. Use plain ASCII. Return ONLY a JSON object with these keys (empty string or array if missing): "+keys+". Set intakeDate to "+today+". Document follows: ";
+      const res=await fetch("/api/claude",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({model:"claude-haiku-4-5-20251001",max_tokens:4000,messages:[{role:"user",content:instr+tx.slice(0,10000)}]}),});
+      if(!res.ok){const e=await res.json().catch(()=>({}));throw new Error(e.error?.message||"Error "+res.status);}
+      const d=await res.json();
+      const raw=d.content.map(c=>c.text||"").join("");
+      const ext=pj(raw);
+      onDone({...EF,...ext,intakeDate:today});
+    }catch(e){setEr("Extraction failed: "+e.message);}
+    setBusy(false);
   };
 
   return(
-    <div>
-      <div className="card">
-        <div className="card-header"><div className="card-icon">📄</div><div><div className="section-heading">Import Intake Document</div><div className="section-sub">Upload PDF, Word (.docx), or plain text — or paste text directly</div></div></div>
-        <div className={"drop-zone"+(dragOver?" drag-over":"")} style={{marginBottom:"1rem",cursor:"pointer"}} onDragOver={e=>{e.preventDefault();setDragOver(true);}} onDragLeave={()=>setDragOver(false)} onDrop={handleDrop} onClick={()=>fileRef.current.click()}>
-          <div className="drop-zone-icon">{fileName?"✅":"📂"}</div>
-          <div className="drop-zone-title">{fileName?fileName:"Drop file here or click to browse"}</div>
-          <div className="drop-zone-sub">Supports PDF, Word (.docx), and plain text (.txt)</div>
-          <input ref={fileRef} type="file" accept=".txt,.pdf,.docx" style={{display:"none"}} onChange={e=>{if(e.target.files[0])readFile(e.target.files[0]);}}/>
+    <div className="cd">
+      <div className="ch"><div className="ci">📄</div><div><div className="ht">Import Intake Document</div><div className="hs">Upload PDF, Word, or text — or paste directly</div></div></div>
+      <div className={"dz"+(ov?" dz-ov":"")} style={{marginBottom:"1rem"}} onDragOver={e=>{e.preventDefault();setOv(true);}} onDragLeave={()=>setOv(false)} onDrop={e=>{e.preventDefault();setOv(false);if(e.dataTransfer.files[0])loadf(e.dataTransfer.files[0]);}} onClick={()=>rf.current.click()}>
+        <div className="di">{fn?"✅":"📂"}</div>
+        <div className="dt">{fn||"Drop file here or click to browse"}</div>
+        <div className="ds">PDF, Word (.docx), or plain text (.txt)</div>
+        <input ref={rf} type="file" accept=".txt,.pdf,.docx" style={{display:"none"}} onChange={e=>{if(e.target.files[0])loadf(e.target.files[0]);}}/>
+      </div>
+      <div className="fd" style={{marginBottom:"1rem"}}>
+        <label>Or paste text directly</label>
+        <div className="lw">
+          <div className="ln">{lns}</div>
+          <textarea className="lt" value={tx} onChange={e=>setTx(e.target.value)} placeholder="Paste the full intake document here..."/>
         </div>
-        <div className="field" style={{marginBottom:"1rem"}}>
-          <label>Or paste intake document text directly</label>
-          <textarea rows={10} value={text} onChange={e=>setText(e.target.value)} placeholder="Paste the full intake document here..." style={{fontFamily:"monospace",fontSize:"12px"}}/>
-        </div>
-        {error&&<div className="alert alert-warn">⚠️ {error}</div>}
-        <div className="alert alert-info">💡 Claude will read the document and auto-populate all 60+ intake form fields. Fields filled by AI will be highlighted so you can review them.</div>
-        <div style={{display:"flex",gap:"10px",justifyContent:"flex-end"}}>
-          <button className="btn btn-outline" onClick={()=>onExtracted({...EMPTY_FORM})}>Start blank form</button>
-          <button className="btn btn-navy btn-lg" onClick={extractWithClaude} disabled={loading||!text.trim()}>
-            {loading?<><span className="spinner"/>&nbsp;Extracting with AI...</>:"🤖 Extract & populate form →"}
-          </button>
-        </div>
+        {tx&&<div className="fi">{tx.split("\n").length} lines · {tx.length} chars</div>}
+      </div>
+      {er&&<div className="al aw">⚠️ {er}</div>}
+      <div className="al ai2">💡 Claude reads the document and auto-fills all fields. Purple = AI-filled.</div>
+      <div style={{display:"flex",gap:"10px",justifyContent:"flex-end"}}>
+        <button className="bn po" onClick={()=>onDone({...EF})}>Blank form</button>
+        <button className="bn pn pl" onClick={go} disabled={busy||!tx.trim()}>{busy?<><span className="sp"/>&nbsp;Extracting...</>:"🤖 Extract & populate →"}</button>
       </div>
     </div>
   );
 }
 
-function Step2({form,setForm,onNext,onBack}){
+function S2({f,sf,nx,bk}){
+  const R=(n,o)=><div className="fd"><label>{n}</label><div className="ri">{o.map(x=><label key={x}><input type="radio" name={n} value={x} checked={f[n]===x} onChange={()=>sf(z=>({...z,[n]:x}))}/>{x}</label>)}</div></div>;
   return(
     <div>
-      <div className="card">
-        <div className="card-header"><div className="card-icon">📋</div><div><div className="section-heading">Intake Header</div></div></div>
-        <div className="field-grid">
-          <Field label="Intake Date" name="intakeDate" type="date" form={form} setForm={setForm} aiField/>
-          <Field label="Intake Method" name="intakeMethod" type="select" options={["Phone","In-Person","Zoom","Email"]} form={form} setForm={setForm} aiField/>
-          <Field label="Intake Staff Name" name="intakeStaff" form={form} setForm={setForm}/>
-          <Field label="Referral Source" name="referralSource" form={form} setForm={setForm} aiField/>
-          <Field label="Attorney Assigned" name="attorneyAssigned" form={form} setForm={setForm}/>
-          <Field label="Follow-Up Date" name="followUpDate" type="date" form={form} setForm={setForm}/>
+      <div className="cd"><div className="ch"><div className="ci">📋</div><div><div className="ht">Intake Header</div></div></div>
+        <div className="fg">
+          <F l="Intake Date" n="intakeDate" t="date" f={f} sf={sf} ai/>
+          <F l="Method" n="intakeMethod" t="sl" o={["Phone","In-Person","Zoom","Email"]} f={f} sf={sf} ai/>
+          <F l="Staff Name" n="intakeStaff" f={f} sf={sf}/>
+          <F l="Referral Source" n="referralSource" f={f} sf={sf} ai/>
+          <F l="Attorney Assigned" n="attorneyAssigned" f={f} sf={sf}/>
+          <F l="Follow-Up Date" n="followUpDate" t="date" f={f} sf={sf}/>
         </div>
       </div>
-      <div className="card">
-        <div className="card-header"><div className="card-icon">👤</div><div><div className="section-heading">PNC Contact Information</div></div></div>
-        <div className="field-grid">
-          <Field label="Full Legal Name" name="fullName" form={form} setForm={setForm} aiField/>
-          <Field label="Preferred Name" name="preferredName" form={form} setForm={setForm} aiField/>
-          <Field label="Date of Birth" name="dob" type="date" form={form} setForm={setForm} aiField/>
-          <Field label="Primary Phone" name="primaryPhone" form={form} setForm={setForm} aiField/>
-          <Field label="Email Address" name="email" form={form} setForm={setForm} aiField/>
-          <Field label="Alternate Phone" name="altPhone" form={form} setForm={setForm} aiField/>
-          <Field label="Mailing Address" name="address" form={form} setForm={setForm} aiField className="col-span-2"/>
-          <Field label="Best Time to Contact" name="bestContact" form={form} setForm={setForm} aiField/>
-          <Field label="Preferred Language" name="preferredLanguage" form={form} setForm={setForm} aiField/>
-          <Field label="Emergency Contact" name="emergencyContact" form={form} setForm={setForm} aiField/>
-          <div className="field">
-            <label>Prior Attorney Consulted?</label>
-            <div className="radio-inline">{["Yes","No","Unknown"].map(o=><label key={o}><input type="radio" name="priorAttorneyYN" value={o} checked={form.priorAttorneyYN===o} onChange={()=>setForm(f=>({...f,priorAttorneyYN:o}))}/>{o}</label>)}</div>
-          </div>
-          {form.priorAttorneyYN==="Yes"&&<Field label="Prior Attorney Name/Firm" name="priorAttorney" form={form} setForm={setForm} aiField/>}
+      <div className="cd"><div className="ch"><div className="ci">👤</div><div><div className="ht">Client Contact</div></div></div>
+        <div className="fg">
+          <F l="Full Name" n="fullName" f={f} sf={sf} ai/>
+          <F l="Preferred Name" n="preferredName" f={f} sf={sf} ai/>
+          <F l="Date of Birth" n="dob" t="date" f={f} sf={sf} ai/>
+          <F l="Primary Phone" n="primaryPhone" f={f} sf={sf} ai/>
+          <F l="Email" n="email" f={f} sf={sf} ai/>
+          <F l="Alt Phone" n="altPhone" f={f} sf={sf} ai/>
+          <F l="Address" n="address" f={f} sf={sf} ai c2/>
+          <F l="Best Contact Time" n="bestContact" f={f} sf={sf} ai/>
+          <F l="Language" n="preferredLanguage" f={f} sf={sf} ai/>
+          <F l="Emergency Contact" n="emergencyContact" f={f} sf={sf} ai/>
         </div>
       </div>
-      <div className="card">
-        <div className="card-header"><div className="card-icon">🏢</div><div><div className="section-heading">Employment Status with Defendant</div></div></div>
-        <div className="field-grid">
-          <Field label="Defendant / Employer (Full Legal Name)" name="defendant" form={form} setForm={setForm} aiField/>
-          <div className="field"><label>Government Employer?</label><div className="radio-inline">{["Yes","No","Unknown"].map(o=><label key={o}><input type="radio" name="isGovtEmployer" value={o} checked={form.isGovtEmployer===o} onChange={()=>setForm(f=>({...f,isGovtEmployer:o}))}/>{o}</label>)}</div></div>
-          <Field label="Last Official Job Title" name="jobTitle" form={form} setForm={setForm} aiField/>
-          <Field label="Pay Rate" name="payRate" form={form} setForm={setForm} aiField/>
-          <div className="field"><label>At-Will or Contract?</label><div className="radio-inline">{["At-Will","Written Contract","Oral Contract","Unknown"].map(o=><label key={o}><input type="radio" name="atWillOrContract" value={o} checked={form.atWillOrContract===o} onChange={()=>setForm(f=>({...f,atWillOrContract:o}))}/>{o}</label>)}</div></div>
-          <div className="field"><label>Employment Status</label><div className="radio-inline">{["Still Employed","Resigned","Terminated","On Leave","Laid Off"].map(o=><label key={o}><input type="radio" name="employmentStatus" value={o} checked={form.employmentStatus===o} onChange={()=>setForm(f=>({...f,employmentStatus:o}))}/>{o}</label>)}</div></div>
-          <Field label="Start Date" name="startDate" type="date" form={form} setForm={setForm} aiField/>
-          <Field label="Termination Date" name="terminationDate" type="date" form={form} setForm={setForm} aiField/>
-          <Field label="Last Direct Supervisor" name="supervisor" form={form} setForm={setForm} aiField/>
-          <div className="field"><label>Arbitration Agreement?</label><div className="radio-inline">{["Yes","No","Unknown"].map(o=><label key={o}><input type="radio" name="arbitrationAgreement" value={o} checked={form.arbitrationAgreement===o} onChange={()=>setForm(f=>({...f,arbitrationAgreement:o}))}/>{o}</label>)}</div></div>
-          <div className="field"><label>Union Member?</label><div className="radio-inline">{["Yes","No","Unknown"].map(o=><label key={o}><input type="radio" name="unionMember" value={o} checked={form.unionMember===o} onChange={()=>setForm(f=>({...f,unionMember:o}))}/>{o}</label>)}</div></div>
-          <Field label="Severance Offered?" name="severanceOffered" type="select" options={["Yes","No","N/A"]} form={form} setForm={setForm} aiField/>
-          <Field label="Employer Stated Reason for Termination" name="terminationEmployerReason" type="textarea" rows={2} form={form} setForm={setForm} aiField/>
-          <Field label="Client Belief as to Actual Reason" name="terminationClientBelief" type="textarea" rows={2} form={form} setForm={setForm} aiField/>
+      <div className="cd"><div className="ch"><div className="ci">🏢</div><div><div className="ht">Employment</div></div></div>
+        <div className="fg">
+          <F l="Employer / Defendant" n="defendant" f={f} sf={sf} ai c2/>
+          <F l="Job Title" n="jobTitle" f={f} sf={sf} ai/>
+          <F l="Pay Rate" n="payRate" f={f} sf={sf} ai/>
+          {R("atWillOrContract",["At-Will","Written Contract","Oral Contract","Unknown"])}
+          {R("employmentStatus",["Still Employed","Resigned","Terminated","Laid Off"])}
+          <F l="Start Date" n="startDate" t="date" f={f} sf={sf} ai/>
+          <F l="Termination Date" n="terminationDate" t="date" f={f} sf={sf} ai/>
+          <F l="Supervisor" n="supervisor" f={f} sf={sf} ai/>
+          {R("arbitrationAgreement",["Yes","No","Unknown"])}
+          {R("unionMember",["Yes","No","Unknown"])}
+          <F l="Employer Reason" n="terminationEmployerReason" t="ta" f={f} sf={sf} ai c2/>
+          <F l="Client Belief (Actual Reason)" n="terminationClientBelief" t="ta" f={f} sf={sf} ai c2/>
         </div>
       </div>
-      <div className="nav-bottom">
-        <button className="btn btn-outline" onClick={onBack}>← Back</button>
-        <button className="btn btn-navy btn-lg" onClick={onNext}>Claims & Evidence →</button>
-      </div>
+      <div className="nb"><button className="bn po" onClick={bk}>Back</button><button className="bn pn pl" onClick={nx}>Claims →</button></div>
     </div>
   );
 }
 
-function Step3({form,setForm,onNext,onBack}){
+function S3({f,sf,nx,bk}){
+  const R=(n,o)=><div className="fd"><label>{n}</label><div className="ri">{o.map(x=><label key={x}><input type="radio" name={n} value={x} checked={f[n]===x} onChange={()=>sf(z=>({...z,[n]:x}))}/>{x}</label>)}</div></div>;
   return(
     <div>
-      <div className="card">
-        <div className="card-header"><div className="card-icon">⚖️</div><div><div className="section-heading">Basis of Case — FEHA & Discrimination</div></div></div>
-        <div className="field-grid">
-          <div className="field"><label>Discrimination Alleged?</label><div className="radio-inline">{["Yes","No","Unknown"].map(o=><label key={o}><input type="radio" name="discriminationBelief" value={o} checked={form.discriminationBelief===o} onChange={()=>setForm(f=>({...f,discriminationBelief:o}))}/>{o}</label>)}</div></div>
-          <div className="field"><label>Sexual Harassment?</label><div className="radio-inline">{["Yes","No","Unknown"].map(o=><label key={o}><input type="radio" name="sexualHarassment" value={o} checked={form.sexualHarassment===o} onChange={()=>setForm(f=>({...f,sexualHarassment:o}))}/>{o}</label>)}</div></div>
-          <CheckGroup label="Protected Classes Alleged" name="discriminationClasses" options={DISC_CLASSES} form={form} setForm={setForm}/>
-          <Field label="Evidence Supporting Discrimination" name="discriminationEvidence" type="textarea" rows={2} form={form} setForm={setForm} aiField/>
-          <Field label="Oral Comments Showing Animus" name="oralAnimus" type="textarea" rows={2} form={form} setForm={setForm} aiField/>
-          <Field label="Written Statements Showing Animus" name="writtenAnimus" type="textarea" rows={2} form={form} setForm={setForm} aiField/>
-          <Field label="Harassment Details" name="harassmentDetails" type="textarea" rows={2} form={form} setForm={setForm} aiField className="col-span-2"/>
+      <div className="cd"><div className="ch"><div className="ci">⚖️</div><div><div className="ht">Discrimination & Harassment</div></div></div>
+        <div className="fg">
+          {R("discriminationBelief",["Yes","No","Unknown"])}
+          {R("sexualHarassment",["Yes","No","Unknown"])}
+          <CG l="Protected Classes" n="discriminationClasses" o={DC} f={f} sf={sf}/>
+          <F l="Discrimination Evidence" n="discriminationEvidence" t="ta" f={f} sf={sf} ai c2/>
+          <F l="Oral Animus" n="oralAnimus" t="ta" f={f} sf={sf} ai c2/>
+          <F l="Written Animus" n="writtenAnimus" t="ta" f={f} sf={sf} ai c2/>
         </div>
       </div>
-      <div className="card">
-        <div className="card-header"><div className="card-icon">🏥</div><div><div className="section-heading">Disability & Protected Leave</div></div></div>
-        <div className="field-grid">
-          <div className="field"><label>Disability or Medical Condition?</label><div className="radio-inline">{["Yes","No","Unknown"].map(o=><label key={o}><input type="radio" name="hasDisability" value={o} checked={form.hasDisability===o} onChange={()=>setForm(f=>({...f,hasDisability:o}))}/>{o}</label>)}</div></div>
-          <div className="field"><label>Terminated After Leave?</label><div className="radio-inline">{["Yes","No","N/A"].map(o=><label key={o}><input type="radio" name="terminatedAfterLeave" value={o} checked={form.terminatedAfterLeave===o} onChange={()=>setForm(f=>({...f,terminatedAfterLeave:o}))}/>{o}</label>)}</div></div>
-          <Field label="Nature of Condition" name="disabilityNature" form={form} setForm={setForm} aiField/>
-          <Field label="Date of Onset" name="disabilityDate" type="date" form={form} setForm={setForm} aiField/>
-          <Field label="Accommodation Requested" name="accommodationRequested" form={form} setForm={setForm} aiField/>
-          <Field label="Accommodation Granted?" name="accommodationGranted" type="select" options={["Yes","No","Partially","N/A"]} form={form} setForm={setForm} aiField/>
-          <CheckGroup label="Leave Types" name="leaveTypes" options={LEAVE_TYPES} form={form} setForm={setForm}/>
-          <Field label="Reason for Leave" name="leaveReason" form={form} setForm={setForm} aiField/>
+      <div className="cd"><div className="ch"><div className="ci">🏥</div><div><div className="ht">Disability & Leave</div></div></div>
+        <div className="fg">
+          {R("hasDisability",["Yes","No","Unknown"])}
+          {R("terminatedAfterLeave",["Yes","No","N/A"])}
+          <F l="Nature of Condition" n="disabilityNature" f={f} sf={sf} ai/>
+          <F l="Accommodation Requested" n="accommodationRequested" f={f} sf={sf} ai/>
+          <CG l="Leave Types" n="leaveTypes" o={LT} f={f} sf={sf}/>
+          <F l="Leave Reason" n="leaveReason" f={f} sf={sf} ai c2/>
         </div>
       </div>
-      <div className="card">
-        <div className="card-header"><div className="card-icon">💰</div><div><div className="section-heading">Wage & Hour</div></div></div>
-        <div className="field-grid">
-          <div className="field"><label>Exempt or Non-Exempt?</label><div className="radio-inline">{["Exempt","Non-exempt","Unknown"].map(o=><label key={o}><input type="radio" name="exemptStatus" value={o} checked={form.exemptStatus===o} onChange={()=>setForm(f=>({...f,exemptStatus:o}))}/>{o}</label>)}</div></div>
-          <div className="field"><label>Hourly or Salaried?</label><div className="radio-inline">{["Hourly","Salaried","Commission"].map(o=><label key={o}><input type="radio" name="hourlyOrSalary" value={o} checked={form.hourlyOrSalary===o} onChange={()=>setForm(f=>({...f,hourlyOrSalary:o}))}/>{o}</label>)}</div></div>
-          <div className="field"><label>Meal & Rest Breaks Provided?</label><div className="radio-inline">{["Yes","No","Sometimes"].map(o=><label key={o}><input type="radio" name="mealRestBreaks" value={o} checked={form.mealRestBreaks===o} onChange={()=>setForm(f=>({...f,mealRestBreaks:o}))}/>{o}</label>)}</div></div>
-          <div className="field"><label>Overtime Paid?</label><div className="radio-inline">{["Yes","No","Unknown"].map(o=><label key={o}><input type="radio" name="overtimePaid" value={o} checked={form.overtimePaid===o} onChange={()=>setForm(f=>({...f,overtimePaid:o}))}/>{o}</label>)}</div></div>
-          <Field label="Meal/Rest Break Details" name="mealRestDetails" type="textarea" rows={2} form={form} setForm={setForm} aiField/>
-          <Field label="Overtime Details" name="overtimeDetails" type="textarea" rows={2} form={form} setForm={setForm} aiField/>
-          <div className="field"><label>Final Paycheck Timely?</label><div className="radio-inline">{["Yes","No","Unknown"].map(o=><label key={o}><input type="radio" name="finalPaycheckTimely" value={o} checked={form.finalPaycheckTimely===o} onChange={()=>setForm(f=>({...f,finalPaycheckTimely:o}))}/>{o}</label>)}</div></div>
+      <div className="cd"><div className="ch"><div className="ci">💰</div><div><div className="ht">Wage & Hour</div></div></div>
+        <div className="fg">
+          {R("exemptStatus",["Exempt","Non-exempt","Unknown"])}
+          {R("hourlyOrSalary",["Hourly","Salaried","Commission"])}
+          {R("mealRestBreaks",["Yes","No","Sometimes"])}
+          {R("overtimePaid",["Yes","No","Unknown"])}
+          <F l="Break Details" n="mealRestDetails" t="ta" f={f} sf={sf} ai c2/>
+          <F l="Overtime Details" n="overtimeDetails" t="ta" f={f} sf={sf} ai c2/>
         </div>
       </div>
-      <div className="card">
-        <div className="card-header"><div className="card-icon">🔍</div><div><div className="section-heading">Witnesses, Evidence & Damages</div></div></div>
-        <div className="field-grid">
-          <Field label="Witness Names & Contact Info" name="witnessNames" type="textarea" rows={3} form={form} setForm={setForm} aiField className="col-span-2"/>
-          <CheckGroup label="Documents in Client Possession" name="evidenceDocs" options={EVIDENCE_DOCS} form={form} setForm={setForm}/>
-          <Field label="Lost Wages" name="lostWages" form={form} setForm={setForm} aiField/>
-          <Field label="Medical Treatment Sought" name="medicalTreatment" form={form} setForm={setForm} aiField/>
-          <Field label="Emotional Distress Symptoms" name="emotionalDistress" type="textarea" rows={2} form={form} setForm={setForm} aiField className="col-span-2"/>
+      <div className="cd"><div className="ch"><div className="ci">🔍</div><div><div className="ht">Witnesses, Evidence & Damages</div></div></div>
+        <div className="fg">
+          <F l="Witnesses" n="witnessNames" t="ta" f={f} sf={sf} ai c2/>
+          <CG l="Documents" n="evidenceDocs" o={ED} f={f} sf={sf}/>
+          <F l="Lost Wages" n="lostWages" f={f} sf={sf} ai/>
+          <F l="Medical Treatment" n="medicalTreatment" f={f} sf={sf} ai/>
+          <F l="Emotional Distress" n="emotionalDistress" t="ta" f={f} sf={sf} ai c2/>
         </div>
       </div>
-      <div className="nav-bottom">
-        <button className="btn btn-outline" onClick={onBack}>← Back</button>
-        <button className="btn btn-navy btn-lg" onClick={onNext}>Review & Analyze →</button>
-      </div>
+      <div className="nb"><button className="bn po" onClick={bk}>Back</button><button className="bn pn pl" onClick={nx}>Analyze →</button></div>
     </div>
   );
 }
 
-function Step4({form,setForm,onNext,onBack}){
-  const [analyzing,setAnalyzing]=useState(false);
-  const [error,setError]=useState("");
-  const analyze=async()=>{
-    setAnalyzing(true);setError("");
-    const prompt="You are a California employment attorney. Analyze this intake and return ONLY JSON with: verdict, verdictReason, meritScore, damagesPotential, riskLevel, solUrgency, claimsAnalysis, solNote, strengths (array), concerns (array), nextSteps (array), recommendation. CLIENT:"+form.fullName+" EMPLOYER:"+form.defendant+" TITLE:"+form.jobTitle+" PAY:"+form.payRate+" DATES:"+form.startDate+"-"+form.terminationDate+" ARB:"+form.arbitrationAgreement+" CLASSES:"+(form.discriminationClasses||[]).join(",")+" DISABILITY:"+form.hasDisability+" LEAVE:"+(form.leaveTypes||[]).join(",")+" BREAKS:"+form.mealRestBreaks+" OT:"+form.overtimePaid+" EVIDENCE:"+(form.evidenceDocs||[]).join(",")+" FACTS:"+String(form.terminationClientBelief||"").slice(0,500);
-      const res=await fetch("/api/claude",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({model:"claude-haiku-4-5-20251001",max_tokens:1500,messages:[{role:"user",content:prompt}]})});
-      if(!res.ok){const err=await res.json().catch(()=>({}));throw new Error(err.error?.message||"Server error "+res.status);}
-      const data=await res.json();
-      const raw=data.content.map(c=>c.text||"").join("");
-      const s=raw.indexOf("{");const e2=raw.lastIndexOf("}");
-      const clean=s!==-1&&e2!==-1?raw.slice(s,e2+1):raw;
-      const r=JSON.parse(clean);
-      setForm(f=>({...f,_verdict:r.verdict,_verdictReason:r.verdictReason,_meritScore:r.meritScore,_damagesPotential:r.damagesPotential,_riskLevel:r.riskLevel,_solUrgency:r.solUrgency,_claimsAnalysis:r.claimsAnalysis,_solNote:r.solNote,_strengths:r.strengths||[],_concerns:r.concerns||[],_nextSteps:r.nextSteps||[],credibilityNotes:r.staffNotes||form.credibilityNotes,recommendation:r.recommendation||form.recommendation}));
-    }catch(e){setError("Analysis failed: "+e.message);}
-    setAnalyzing(false);
+function S4({f,sf,nx,bk}){
+  const [busy,setBusy]=useState(false);
+  const [er,setEr]=useState("");
+  const go=async()=>{
+    setBusy(true);setEr("");
+    try{
+      const facts="CLIENT:"+f.fullName+" EMPLOYER:"+f.defendant+" TITLE:"+f.jobTitle+" PAY:"+f.payRate+" DATES:"+f.startDate+"-"+f.terminationDate+" ARB:"+f.arbitrationAgreement+" CLASSES:"+(f.discriminationClasses||[]).join(",")+" DISABILITY:"+f.hasDisability+" LEAVE:"+(f.leaveTypes||[]).join(",")+" BREAKS:"+f.mealRestBreaks+" OT:"+f.overtimePaid+" EVIDENCE:"+(f.evidenceDocs||[]).join(",")+" FACTS:"+String(f.terminationClientBelief||"").slice(0,400);
+      const instr="California employment attorney intake analysis. Return ONLY JSON: {verdict,verdictReason,meritScore,damagesPotential,riskLevel,solUrgency,claimsAnalysis,solNote,strengths,concerns,nextSteps,recommendation}. "+facts;
+      const res=await fetch("/api/claude",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({model:"claude-haiku-4-5-20251001",max_tokens:1500,messages:[{role:"user",content:instr}]}),});
+      if(!res.ok){const e=await res.json().catch(()=>({}));throw new Error(e.error?.message||"Error");}
+      const d=await res.json();
+      const r=pj(d.content.map(c=>c.text||"").join(""));
+      sf(x=>({...x,_verdict:r.verdict,_verdictReason:r.verdictReason,_meritScore:r.meritScore,_damagesPotential:r.damagesPotential,_riskLevel:r.riskLevel,_solUrgency:r.solUrgency,_claimsAnalysis:r.claimsAnalysis,_solNote:r.solNote,_strengths:r.strengths||[],_concerns:r.concerns||[],_nextSteps:r.nextSteps||[],recommendation:r.recommendation||""}));
+    }catch(e){setEr("Analysis failed: "+e.message);}
+    setBusy(false);
   };
-  const sc=(v,type)=>{if(type==="merit")return v>=7?"green-text":v>=5?"amber-text":"red-text";if(type==="dmg")return v==="High"?"green-text":v==="Medium"?"amber-text":"red-text";if(type==="risk")return v==="Low"?"green-text":v==="Medium"?"amber-text":"red-text";return v==="Low"?"green-text":v==="Medium"?"amber-text":"red-text";};
-  const vClass=form._verdict==="ACCEPT"?"verdict-accept":form._verdict==="DECLINE"?"verdict-decline":form._verdict?"verdict-review":"";
+  const sc=(v,t)=>t==="m"?v>=7?"gt":v>=5?"at":"rt":t==="d"?v==="High"?"gt":v==="Medium"?"at":"rt":v==="Low"?"gt":v==="Medium"?"at":"rt";
+  const vc=f._verdict==="ACCEPT"?"va":f._verdict==="DECLINE"?"vd":f._verdict?"vr":"";
   return(
     <div>
-      <div className="card">
-        <div className="card-header"><div className="card-icon">🤖</div><div><div className="section-heading">AI Case Analysis</div><div className="section-sub">Let Claude review the full intake and recommend accept / decline</div></div></div>
-        {!form._verdict&&!analyzing&&(<div><div className="alert alert-info" style={{marginBottom:"1rem"}}>Claude will analyze all information and provide a merit score, damages assessment, SOL analysis, and case recommendation.</div><button className="btn btn-navy btn-lg" onClick={analyze}>🔍 Run AI Case Analysis</button></div>)}
-        {analyzing&&<div className="alert alert-info"><span className="spinner" style={{borderTopColor:"#1e40af",borderColor:"#bfdbfe"}}/>&nbsp;Analyzing case details...</div>}
-        {error&&<div className="alert alert-warn">⚠️ {error}</div>}
-        {form._verdict&&!analyzing&&(
+      <div className="cd"><div className="ch"><div className="ci">🤖</div><div><div className="ht">AI Case Analysis</div></div></div>
+        {!f._verdict&&!busy&&<div><div className="al ai2" style={{marginBottom:"1rem"}}>Claude will analyze the intake and provide a case recommendation.</div><button className="bn pn pl" onClick={go}>Run Analysis</button></div>}
+        {busy&&<div className="al ai2"><span className="sp" style={{borderTopColor:"#1e40af",borderColor:"#bfdbfe"}}/>&nbsp;Analyzing...</div>}
+        {er&&<div className="al aw">⚠️ {er}</div>}
+        {f._verdict&&!busy&&(
           <div>
-            <div className={"verdict-card "+vClass}>
-              <div className="verdict-title">{form._verdict==="ACCEPT"?"✅":form._verdict==="DECLINE"?"❌":"⚠️"} {form._verdict}</div>
-              <div className="verdict-reason">{form._verdictReason}</div>
+            <div className={"vc "+vc}><div style={{fontSize:"20px",fontWeight:700}}>{f._verdict==="ACCEPT"?"✅":f._verdict==="DECLINE"?"❌":"⚠️"} {f._verdict}</div><div>{f._verdictReason}</div></div>
+            <div className="sg2">
+              <div className="sb3"><div className={"sn2 "+sc(f._meritScore,"m")}>{f._meritScore}/10</div><div className="sl2">Merit</div></div>
+              <div className="sb3"><div className={"sn2 "+sc(f._damagesPotential,"d")}>{f._damagesPotential}</div><div className="sl2">Damages</div></div>
+              <div className="sb3"><div className={"sn2 "+sc(f._riskLevel,"r")}>{f._riskLevel}</div><div className="sl2">Risk</div></div>
+              <div className="sb3"><div className={"sn2 "+sc(f._solUrgency,"s")}>{f._solUrgency}</div><div className="sl2">SOL</div></div>
             </div>
-            <div className="score-grid">
-              <div className="score-box"><div className={"score-num "+(sc(form._meritScore,"merit"))}>{form._meritScore}/10</div><div className="score-label">Merit Score</div></div>
-              <div className="score-box"><div className={"score-num "+(sc(form._damagesPotential,"dmg"))}>{form._damagesPotential}</div><div className="score-label">Damages</div></div>
-              <div className="score-box"><div className={"score-num "+(sc(form._riskLevel,"risk"))}>{form._riskLevel}</div><div className="score-label">Risk Level</div></div>
-              <div className="score-box"><div className={"score-num "+(sc(form._solUrgency,"sol"))}>{form._solUrgency}</div><div className="score-label">SOL Urgency</div></div>
-            </div>
-            {form._claimsAnalysis&&<p style={{fontSize:"14px",lineHeight:"1.7",marginBottom:"12px"}}>{form._claimsAnalysis}</p>}
-            {(form._strengths||[]).length>0&&<div style={{marginBottom:"10px"}}><strong style={{fontSize:"13px"}}>✅ Strengths</strong><ul style={{paddingLeft:"18px",fontSize:"13px",lineHeight:"1.8"}}>{form._strengths.map((s,i)=><li key={i}>{s}</li>)}</ul></div>}
-            {(form._concerns||[]).length>0&&<div style={{marginBottom:"10px"}}><strong style={{fontSize:"13px"}}>⚠️ Concerns</strong><ul style={{paddingLeft:"18px",fontSize:"13px",lineHeight:"1.8"}}>{form._concerns.map((c,i)=><li key={i}>{c}</li>)}</ul></div>}
-            {(form._nextSteps||[]).length>0&&<div style={{marginBottom:"10px"}}><strong style={{fontSize:"13px"}}>📋 Next Steps</strong><ul style={{paddingLeft:"18px",fontSize:"13px",lineHeight:"1.8"}}>{form._nextSteps.map((s,i)=><li key={i}>{s}</li>)}</ul></div>}
-            {form._solNote&&<div className="alert alert-warn" style={{marginTop:"10px"}}>⏰ <strong>SOL:</strong> {form._solNote}</div>}
-            <button className="btn btn-outline" style={{marginTop:"12px"}} onClick={analyze}>↻ Re-analyze</button>
+            {f._claimsAnalysis&&<p style={{fontSize:"14px",lineHeight:"1.7",marginBottom:"12px"}}>{f._claimsAnalysis}</p>}
+            {(f._strengths||[]).length>0&&<div style={{marginBottom:"10px"}}><strong>✅ Strengths</strong><ul style={{paddingLeft:"18px",fontSize:"13px",lineHeight:"1.8"}}>{f._strengths.map((s,i)=><li key={i}>{s}</li>)}</ul></div>}
+            {(f._concerns||[]).length>0&&<div style={{marginBottom:"10px"}}><strong>⚠️ Concerns</strong><ul style={{paddingLeft:"18px",fontSize:"13px",lineHeight:"1.8"}}>{f._concerns.map((s,i)=><li key={i}>{s}</li>)}</ul></div>}
+            {(f._nextSteps||[]).length>0&&<div style={{marginBottom:"10px"}}><strong>📋 Next Steps</strong><ul style={{paddingLeft:"18px",fontSize:"13px",lineHeight:"1.8"}}>{f._nextSteps.map((s,i)=><li key={i}>{s}</li>)}</ul></div>}
+            {f._solNote&&<div className="al aw">⏰ {f._solNote}</div>}
+            <button className="bn po" style={{marginTop:"12px"}} onClick={go}>Re-analyze</button>
           </div>
         )}
       </div>
-      <div className="card">
-        <div className="card-header"><div className="card-icon">📝</div><div><div className="section-heading">Intake Staff Notes</div></div></div>
-        <div className="field-grid">
-          <Field label="Credibility / Demeanor / Inconsistencies" name="credibilityNotes" type="textarea" rows={3} form={form} setForm={setForm} aiField className="col-span-2"/>
-          <Field label="Red Flags (SOL, arbitration, prior claims)" name="redFlags" type="textarea" rows={3} form={form} setForm={setForm} className="col-span-2"/>
-          <Field label="Case Strengths / Corroborating Evidence" name="caseStrengths" type="textarea" rows={3} form={form} setForm={setForm} aiField className="col-span-2"/>
-          <Field label="Action Items / Documents to Collect" name="actionItems" type="textarea" rows={3} form={form} setForm={setForm} aiField className="col-span-2"/>
-          <Field label="Recommendation" name="recommendation" type="select" options={["Take case","Decline","Refer out","Send to attorney for review"]} form={form} setForm={setForm} aiField/>
+      <div className="cd"><div className="ch"><div className="ci">📝</div><div><div className="ht">Staff Notes</div></div></div>
+        <div className="fg">
+          <F l="Credibility / Demeanor" n="credibilityNotes" t="ta" f={f} sf={sf} ai c2/>
+          <F l="Red Flags" n="redFlags" t="ta" f={f} sf={sf} c2/>
+          <F l="Case Strengths" n="caseStrengths" t="ta" f={f} sf={sf} ai c2/>
+          <F l="Action Items" n="actionItems" t="ta" f={f} sf={sf} ai c2/>
+          <F l="Recommendation" n="recommendation" t="sl" o={["Take case","Decline","Refer out","Send to attorney"]} f={f} sf={sf} ai/>
         </div>
       </div>
-      <div className="nav-bottom">
-        <button className="btn btn-outline" onClick={onBack}>← Back</button>
-        <button className="btn btn-navy btn-lg" onClick={onNext}>Generate PDF →</button>
-      </div>
+      <div className="nb"><button className="bn po" onClick={bk}>Back</button><button className="bn pn pl" onClick={nx}>Download PDF →</button></div>
     </div>
   );
 }
 
-function Step5({form,onBack}){
-  const [generating,setGenerating]=useState(false);
+function S5({f,bk}){
+  const [busy,setBusy]=useState(false);
   const [done,setDone]=useState(false);
-
-  const generatePDF=async()=>{
-    setGenerating(true);
+  const sa=v=>String(v||"").replace(/[^\x20-\x7E]/g," ").slice(0,200);
+  const gen=async()=>{
+    setBusy(true);
     try{
       const {PDFDocument,rgb,StandardFonts}=PDFLib;
-      const pdfDoc=await PDFDocument.create();
-      const font=await pdfDoc.embedFont(StandardFonts.Helvetica);
-      const fontBold=await pdfDoc.embedFont(StandardFonts.HelveticaBold);
-      const navy=rgb(0.1,0.1,0.24);const red=rgb(0.75,0.22,0.17);const black=rgb(0,0,0);const gray=rgb(0.4,0.4,0.4);
+      const doc=await PDFDocument.create();
+      const fn2=await doc.embedFont(StandardFonts.Helvetica);
+      const fb=await doc.embedFont(StandardFonts.HelveticaBold);
+      const nv=rgb(.1,.1,.24),rd=rgb(.75,.22,.17),bk2=rgb(0,0,0),gy=rgb(.4,.4,.4);
       const W=612,H=792,M=50;
-
-      const addPage=()=>{
-        const p=pdfDoc.addPage([W,H]);
-        p.drawRectangle({x:0,y:H-60,width:W,height:60,color:navy});
-        p.drawText("WILLIAMS & SEEMEN, APLC",{x:M,y:H-28,size:13,font:fontBold,color:rgb(1,1,1)});
-        p.drawText("Employment Law Intake Questionnaire — Confidential & Privileged",{x:M,y:H-45,size:8,font,color:rgb(0.8,0.8,0.8)});
-        p.drawLine({start:{x:M,y:30},end:{x:W-M,y:30},thickness:0.5,color:gray});
-        p.drawText("Williams & Seemen, APLC  |  16255 Ventura Blvd., Suite 1106, Encino, CA 91436  |  (818) 898-3300",{x:M,y:18,size:7,font,color:gray});
+      const pg=()=>{
+        const p=doc.addPage([W,H]);
+        p.drawRectangle({x:0,y:H-60,width:W,height:60,color:nv});
+        p.drawText("WILLIAMS & SEEMEN, APLC",{x:M,y:H-28,size:13,font:fb,color:rgb(1,1,1)});
+        p.drawText("Employment Law Intake - Confidential",{x:M,y:H-45,size:8,font:fn2,color:rgb(.8,.8,.8)});
+        p.drawLine({start:{x:M,y:30},end:{x:W-M,y:30},thickness:.5,color:gy});
+        p.drawText("Williams & Seemen APLC | 16255 Ventura Blvd Suite 1106 Encino CA 91436 | (818) 898-3300",{x:M,y:18,size:7,font:fn2,color:gy});
         return p;
       };
-
-      const safe=v=>String(v||"").replace(/[^ -~]/g," ").slice(0,200);
-
-      const field=(p,label,value,x,y,w=240)=>{
-        p.drawText(label+":",{x,y,size:7.5,font:fontBold,color:gray});
-        p.drawLine({start:{x,y:y-3},end:{x:x+w,y:y-3},thickness:0.3,color:rgb(0.8,0.8,0.8)});
-        if(value)p.drawText(safe(value),{x,y:y-13,size:9,font,color:black});
-        return y-30;
-      };
-
-      const section=(p,title,y)=>{
-        p.drawRectangle({x:M-5,y:y-4,width:W-2*M+10,height:18,color:navy});
-        p.drawText(title.toUpperCase(),{x:M,y:y+1,size:9,font:fontBold,color:rgb(1,1,1)});
-        return y-24;
-      };
-
-      const wrap=(p,label,value,x,y)=>{
-        p.drawText(label+":",{x,y,size:7.5,font:fontBold,color:gray});
-        y-=14;
-        if(!value)return y-4;
-        const words=safe(value).split(" ");let line="",lines=[];
-        for(const w2 of words){if((line+" "+w2).length>85){lines.push(line);line=w2;}else line=line?line+" "+w2:w2;}
-        if(line)lines.push(line);
-        for(const l of lines.slice(0,6)){p.drawText(l,{x,y,size:9,font,color:black});y-=13;}
-        return y-4;
-      };
-
-      let p=addPage();let y=H-80;
-      p.drawText("INTAKE DATE: "+safe(form.intakeDate||new Date().toLocaleDateString()),{x:M,y,size:9,font,color:black});
-      p.drawText("METHOD: "+safe(form.intakeMethod),{x:250,y,size:9,font,color:black});
-      p.drawText("STAFF: "+safe(form.intakeStaff),{x:420,y,size:9,font,color:black});
-      y-=20;
-      y=section(p,"Prospective New Client Contact Information",y);y-=8;
-      y=field(p,"Full Legal Name",form.fullName,M,y);
-      y=field(p,"Date of Birth",form.dob,M,y);
-      y=field(p,"Primary Phone",form.primaryPhone,M,y);
-      y=field(p,"Email Address",form.email,M,y);
-      y=field(p,"Alternate Phone",form.altPhone,M,y);
-      y=wrap(p,"Mailing Address",form.address,M,y);
-      y=field(p,"Best Time to Contact",form.bestContact,M,y);
-      y=field(p,"Prior Attorney",form.priorAttorney||form.priorAttorneyYN,M,y);
-      y-=10;
-
-      p=addPage();y=H-80;
-      y=section(p,"Employment Status with Defendant",y);y-=8;
-      y=wrap(p,"Defendant / Employer",form.defendant,M,y);
-      y=field(p,"Job Title",form.jobTitle,M,y);
-      y=field(p,"Pay Rate",form.payRate,M,y);
-      y=field(p,"Employment Type",form.atWillOrContract,M,y);
-      y=field(p,"Start Date",form.startDate,M,y);
-      y=field(p,"Termination Date",form.terminationDate,M,y);
-      y=wrap(p,"Last Supervisor",form.supervisor,M,y);
-      y=field(p,"Employment Status",form.employmentStatus,M,y);
-      y=field(p,"Arbitration Agreement",form.arbitrationAgreement,M,y);
-      y=field(p,"Union Member",form.unionMember,M,y);
-      y=field(p,"Severance Offered",form.severanceOffered,M,y);
-      y-=10;
-      y=wrap(p,"Employer Stated Reason",form.terminationEmployerReason,M,y);
-      y=wrap(p,"Client Belief as to Actual Reason",form.terminationClientBelief,M,y);
-
-      p=addPage();y=H-80;
-      y=section(p,"Basis of Case",y);y-=8;
-      y=field(p,"Discrimination Alleged?",form.discriminationBelief,M,y);
-      y=wrap(p,"Protected Classes",(form.discriminationClasses||[]).join(", "),M,y);
-      y=wrap(p,"Evidence",form.discriminationEvidence,M,y);
-      y=wrap(p,"Oral Animus",form.oralAnimus,M,y);
-      y=wrap(p,"Written Animus",form.writtenAnimus,M,y);
-      y-=10;
-      y=section(p,"Disability & Leave",y);y-=8;
-      y=field(p,"Disability?",form.hasDisability,M,y);
-      y=wrap(p,"Nature of Condition",form.disabilityNature,M,y);
-      y=wrap(p,"Leave Types",(form.leaveTypes||[]).join(", "),M,y);
-      y=field(p,"Terminated After Leave?",form.terminatedAfterLeave,M,y);
-      y-=10;
-      y=section(p,"Wage & Hour",y);y-=8;
-      y=field(p,"Exempt Status",form.exemptStatus,M,y);
-      y=field(p,"Meal & Rest Breaks",form.mealRestBreaks,M,y);
-      y=wrap(p,"Break Details",form.mealRestDetails,M,y);
-      y=field(p,"Overtime Paid?",form.overtimePaid,M,y);
-
-      p=addPage();y=H-80;
-      y=section(p,"Witnesses & Evidence",y);y-=8;
-      y=wrap(p,"Witnesses",form.witnessNames,M,y);
-      y=wrap(p,"Documents",(form.evidenceDocs||[]).join(", "),M,y);
-      y-=10;
-      y=section(p,"Intake Staff Notes & AI Analysis",y);y-=8;
-      y=wrap(p,"Credibility / Demeanor",form.credibilityNotes,M,y);
-      y=wrap(p,"Red Flags",form.redFlags,M,y);
-      y=wrap(p,"Case Strengths",form.caseStrengths,M,y);
-      y=wrap(p,"Action Items",form.actionItems,M,y);
-      y-=10;
-
-      if(form.recommendation){
-        const recText="RECOMMENDATION: "+safe(form.recommendation);
-        const recWords=recText.split(" ");const recLines=[];let recLine="";
-        for(const w2 of recWords){if((recLine+" "+w2).length>72){recLines.push(recLine);recLine=w2;}else recLine=recLine?recLine+" "+w2:w2;}
-        if(recLine)recLines.push(recLine);
-        const recH=recLines.length*15+20;
-        if(y-recH>40){
-          p.drawRectangle({x:M-5,y:y-recH+10,width:W-2*M+10,height:recH,color:rgb(0.86,0.97,0.88)});
-          let recY=y-4;
-          for(const l of recLines){p.drawText(l,{x:M+5,y:recY,size:9,font:fontBold,color:rgb(0.06,0.4,0.2)});recY-=15;}
-          y=recY-10;
-        }
-      }
-
-      if(form._verdict){
-        const vColor=form._verdict==="ACCEPT"?rgb(0.06,0.4,0.2):form._verdict==="DECLINE"?rgb(0.75,0.1,0.1):rgb(0.5,0.3,0);
-        if(y>60)p.drawText("AI: "+form._verdict+" — "+safe(form._verdictReason),{x:M,y:y>60?y:60,size:9,font:fontBold,color:vColor});
-      }
-
-      p.drawText("Generated: "+new Date().toLocaleString(),{x:M,y:50,size:7,font,color:gray});
-      p.drawText("CONFIDENTIAL & PRIVILEGED — ATTORNEY WORK PRODUCT",{x:M,y:38,size:7,font:fontBold,color:red});
-
-      const pdfBytes=await pdfDoc.save();
-      const blob=new Blob([pdfBytes],{type:"application/pdf"});
+      const sec=(p,t,y)=>{p.drawRectangle({x:M-5,y:y-4,width:W-2*M+10,height:18,color:nv});p.drawText(t.toUpperCase(),{x:M,y:y+1,size:9,font:fb,color:rgb(1,1,1)});return y-24;};
+      const fld=(p,l,v,x,y)=>{p.drawText(l+":",{x,y,size:7.5,font:fb,color:gy});p.drawLine({start:{x,y:y-3},end:{x:x+240,y:y-3},thickness:.3,color:rgb(.8,.8,.8)});if(v)p.drawText(sa(v),{x,y:y-13,size:9,font:fn2,color:bk2});return y-30;};
+      const blk=(p,l,v,x,y)=>{p.drawText(l+":",{x,y,size:7.5,font:fb,color:gy});y-=14;if(!v)return y-4;const ws=sa(v).split(" ");let ln2="",ls=[];for(const w of ws){if((ln2+" "+w).length>85){ls.push(ln2);ln2=w;}else ln2=ln2?ln2+" "+w:w;}if(ln2)ls.push(ln2);for(const l2 of ls.slice(0,6)){p.drawText(l2,{x,y,size:9,font:fn2,color:bk2});y-=13;}return y-4;};
+      let p=pg(),y=H-80;
+      p.drawText("Date: "+sa(f.intakeDate||new Date().toLocaleDateString()),{x:M,y,size:9,font:fn2,color:bk2});
+      p.drawText("Staff: "+sa(f.intakeStaff),{x:300,y,size:9,font:fn2,color:bk2});y-=20;
+      y=sec(p,"Contact",y);y-=8;
+      y=fld(p,"Full Name",f.fullName,M,y);y=fld(p,"Phone",f.primaryPhone,M,y);y=fld(p,"Email",f.email,M,y);y=blk(p,"Address",f.address,M,y);y-=10;
+      y=sec(p,"Employment",y);y-=8;
+      y=blk(p,"Employer",f.defendant,M,y);y=fld(p,"Title",f.jobTitle,M,y);y=fld(p,"Pay",f.payRate,M,y);y=fld(p,"Start",f.startDate,M,y);y=fld(p,"End",f.terminationDate,M,y);y=fld(p,"Arbitration",f.arbitrationAgreement,M,y);y-=10;
+      y=blk(p,"Employer Reason",f.terminationEmployerReason,M,y);y=blk(p,"Client Belief",f.terminationClientBelief,M,y);
+      p=pg();y=H-80;
+      y=sec(p,"Claims & Leave",y);y-=8;
+      y=fld(p,"Discrimination",f.discriminationBelief,M,y);y=blk(p,"Classes",(f.discriminationClasses||[]).join(", "),M,y);y=blk(p,"Leave",(f.leaveTypes||[]).join(", "),M,y);y=fld(p,"After Leave",f.terminatedAfterLeave,M,y);y-=10;
+      y=sec(p,"Wage & Hour",y);y-=8;
+      y=fld(p,"Breaks",f.mealRestBreaks,M,y);y=blk(p,"Break Details",f.mealRestDetails,M,y);y=fld(p,"OT Paid",f.overtimePaid,M,y);y-=10;
+      y=sec(p,"Evidence & Notes",y);y-=8;
+      y=blk(p,"Witnesses",f.witnessNames,M,y);y=blk(p,"Documents",(f.evidenceDocs||[]).join(", "),M,y);y=blk(p,"Strengths",f.caseStrengths,M,y);y=blk(p,"Action Items",f.actionItems,M,y);y-=10;
+      if(f.recommendation){p.drawRectangle({x:M-5,y:y-20,width:W-2*M+10,height:28,color:rgb(.86,.97,.88)});p.drawText("RECOMMENDATION: "+sa(f.recommendation),{x:M,y:y-12,size:10,font:fb,color:rgb(.06,.4,.2)});y-=38;}
+      if(f._verdict){const vc2=f._verdict==="ACCEPT"?rgb(.06,.4,.2):f._verdict==="DECLINE"?rgb(.75,.1,.1):rgb(.5,.3,0);p.drawText("AI: "+f._verdict+" - "+sa(f._verdictReason),{x:M,y:Math.max(y,60),size:9,font:fb,color:vc2});}
+      p.drawText("Generated: "+new Date().toLocaleString(),{x:M,y:50,size:7,font:fn2,color:gy});
+      p.drawText("CONFIDENTIAL & PRIVILEGED - ATTORNEY WORK PRODUCT",{x:M,y:38,size:7,font:fb,color:rd});
+      const bytes=await doc.save();
+      const blob=new Blob([bytes],{type:"application/pdf"});
       const url=URL.createObjectURL(blob);
       const a=document.createElement("a");a.href=url;
-      a.download="Intake_"+(form.fullName||"Client").replace(/\s+/g,"_")+"_"+new Date().toISOString().split("T")[0]+".pdf";
-      a.click();URL.revokeObjectURL(url);
-      setDone(true);
+      a.download="Intake_"+(f.fullName||"Client").replace(/\s+/g,"_")+"_"+new Date().toISOString().split("T")[0]+".pdf";
+      a.click();URL.revokeObjectURL(url);setDone(true);
     }catch(e){alert("PDF error: "+e.message);}
-    setGenerating(false);
+    setBusy(false);
   };
-
-  const downloadJSON=()=>{
-    const clean=Object.fromEntries(Object.entries(form).filter(([k])=>!k.startsWith("_")));
-    const b=new Blob([JSON.stringify(clean,null,2)],{type:"application/json"});
-    const a=document.createElement("a");a.href=URL.createObjectURL(b);
-    a.download="Intake_"+(form.fullName||"Client").replace(/\s+/g,"_")+".json";a.click();
-  };
-
-  const fields=[["Client Name",form.fullName],["Phone",form.primaryPhone],["Email",form.email],["Employer",form.defendant],["Job Title",form.jobTitle],["Pay",form.payRate],["Start Date",form.startDate],["End Date",form.terminationDate],["Arbitration",form.arbitrationAgreement],["Recommendation",form.recommendation]].filter(([,v])=>v);
-
+  const flds=[["Client",f.fullName],["Phone",f.primaryPhone],["Email",f.email],["Employer",f.defendant],["Title",f.jobTitle],["Pay",f.payRate],["Start",f.startDate],["End",f.terminationDate],["Arbitration",f.arbitrationAgreement],["Recommendation",f.recommendation]].filter(([,v])=>v);
   return(
-    <div>
-      <div className="card">
-        <div className="card-header"><div className="card-icon">✅</div><div><div className="section-heading">Intake Complete — Ready to Download</div></div></div>
-        <div className="summary-grid">{fields.map(([l,v])=><div key={l} className="summary-item"><span className="summary-label">{l}</span><span className="summary-value">{v}</span></div>)}</div>
-        {form._verdict&&(
-          <div className={"verdict-card "+(form._verdict==="ACCEPT"?"verdict-accept":form._verdict==="DECLINE"?"verdict-decline":"verdict-review")} style={{marginBottom:"1.5rem"}}>
-            <div style={{fontSize:"15px",fontWeight:700}}>{form._verdict==="ACCEPT"?"✅":form._verdict==="DECLINE"?"❌":"⚠️"} AI Recommendation: {form.recommendation||form._verdict}</div>
-            <div style={{fontSize:"13px",marginTop:"4px"}}>{form._verdictReason}</div>
-          </div>
-        )}
-        {done&&<div className="alert alert-success">✅ PDF downloaded successfully!</div>}
-        <div style={{display:"flex",gap:"12px",flexWrap:"wrap"}}>
-          <button className="btn btn-navy btn-lg" onClick={generatePDF} disabled={generating}>
-            {generating?<><span className="spinner"/>&nbsp;Generating PDF...</>:"⬇️ Download filled PDF"}
-          </button>
-          <button className="btn btn-outline" onClick={downloadJSON}>📄 Export as JSON</button>
-        </div>
+    <div className="cd">
+      <div className="ch"><div className="ci">✅</div><div><div className="ht">Ready to Download</div></div></div>
+      <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:"8px",marginBottom:"1.5rem"}}>
+        {flds.map(([l,v])=><div key={l} style={{display:"flex",gap:"8px",fontSize:"13px",padding:"8px 12px",background:"#f8fafc",borderRadius:"8px",border:"1px solid var(--bd)"}}><span style={{color:"var(--mu)",minWidth:"80px"}}>{l}</span><span style={{fontWeight:500}}>{v}</span></div>)}
       </div>
-      <div className="nav-bottom">
-        <button className="btn btn-outline" onClick={onBack}>← Back to edit</button>
-        <button className="btn btn-green btn-lg" onClick={()=>window.location.reload()}>＋ New Intake</button>
+      {f._verdict&&<div className={"vc "+(f._verdict==="ACCEPT"?"va":f._verdict==="DECLINE"?"vd":"vr")} style={{marginBottom:"1rem"}}><div style={{fontWeight:700}}>{f._verdict==="ACCEPT"?"✅":f._verdict==="DECLINE"?"❌":"⚠️"} {f.recommendation||f._verdict}</div><div style={{fontSize:"13px",marginTop:"4px"}}>{f._verdictReason}</div></div>}
+      {done&&<div className="al as">✅ PDF downloaded!</div>}
+      <div style={{display:"flex",gap:"12px"}}>
+        <button className="bn pn pl" onClick={gen} disabled={busy}>{busy?<><span className="sp"/>&nbsp;Generating...</>:"⬇️ Download PDF"}</button>
+        <button className="bn po" onClick={()=>{const b=new Blob([JSON.stringify(Object.fromEntries(Object.entries(f).filter(([k])=>!k.startsWith("_"))),null,2)],{type:"application/json"});const a=document.createElement("a");a.href=URL.createObjectURL(b);a.download="Intake_"+(f.fullName||"Client")+".json";a.click();}}>📄 JSON</button>
       </div>
+      <div className="nb"><button className="bn po" onClick={bk}>Back</button><button className="bn pg pl" onClick={()=>window.location.reload()}>+ New Intake</button></div>
     </div>
   );
 }
 
 function App(){
   const [step,setStep]=useState(1);
-  const [form,setForm]=useState({...EMPTY_FORM});
-  const handleExtracted=data=>{setForm(data);setStep(2);};
+  const [form,setForm]=useState({...EF});
   return(
     <div>
-      <div className="topbar">
-        <div className="topbar-brand">
-          <div className="topbar-logo">W&S<br/>APLC</div>
-          <div><div className="topbar-title">Williams &amp; Seemen, APLC</div><div className="topbar-sub">Employment Law Intake System</div></div>
+      <div className="tb">
+        <div style={{display:"flex",alignItems:"center",gap:"12px"}}>
+          <div className="tl">W&amp;S</div>
+          <div><div style={{fontSize:"15px",fontWeight:600}}>Williams &amp; Seemen, APLC</div><div style={{fontSize:"11px",opacity:.7}}>Employment Law Intake System</div></div>
         </div>
         <div style={{display:"flex",alignItems:"center",gap:"8px"}}>
-          {form.fullName&&<span className="badge badge-purple">👤 {form.fullName}</span>}
-          <span style={{fontSize:"12px",color:"rgba(255,255,255,0.6)"}}>Confidential &amp; Privileged</span>
+          {form.fullName&&<span className="bg">👤 {form.fullName}</span>}
+          <span style={{fontSize:"12px",color:"rgba(255,255,255,.6)"}}>Confidential</span>
         </div>
       </div>
-      <div className="main">
-        <StepBar step={step}/>
-        {step===1&&<Step1 onExtracted={handleExtracted}/>}
-        {step===2&&<Step2 form={form} setForm={setForm} onNext={()=>setStep(3)} onBack={()=>setStep(1)}/>}
-        {step===3&&<Step3 form={form} setForm={setForm} onNext={()=>setStep(4)} onBack={()=>setStep(2)}/>}
-        {step===4&&<Step4 form={form} setForm={setForm} onNext={()=>setStep(5)} onBack={()=>setStep(3)}/>}
-        {step===5&&<Step5 form={form} onBack={()=>setStep(4)}/>}
+      <div className="mn">
+        <Bar s={step}/>
+        {step===1&&<S1 onDone={d=>{setForm(d);setStep(2);}}/>}
+        {step===2&&<S2 f={form} sf={setForm} nx={()=>setStep(3)} bk={()=>setStep(1)}/>}
+        {step===3&&<S3 f={form} sf={setForm} nx={()=>setStep(4)} bk={()=>setStep(2)}/>}
+        {step===4&&<S4 f={form} sf={setForm} nx={()=>setStep(5)} bk={()=>setStep(3)}/>}
+        {step===5&&<S5 f={form} bk={()=>setStep(4)}/>}
       </div>
     </div>
   );
 }
-
 ReactDOM.createRoot(document.getElementById("root")).render(<App/>);
 </script>
 </body>
