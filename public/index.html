@@ -325,6 +325,334 @@ Return ONLY valid JSON (no markdown, no backticks). Map to these exact keys:
       const data = await res.json();
       const raw = data.content.map(c => c.text||"").join("");
       let clean = raw.replace(/```json|```/g,"").trim();
+      const jsonStart = clean.indexOf("{");
+      const jsonEnd = clean.lastIndexOf("}");
+      if (jsonStart !== -1 && jsonEnd !== -1) clean = clean.slice(jsonStart, jsonEnd + 1);
+      const extracted = JSON.parse(clean);ead>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Williams &amp; Seemen, APLC — Employment Intake System</title>
+<script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+<script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+<script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+<script src="https://unpkg.com/pdf-lib@1.17.1/dist/pdf-lib.min.js"></script>
+
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+:root {
+  --navy: #1a1a3e;
+  --navy-mid: #2a2a5e;
+  --red: #c0392b;
+  --gold: #b8860b;
+  --bg: #f4f6f9;
+  --card: #ffffff;
+  --border: #dde1e9;
+  --text: #1a1a2e;
+  --muted: #6b7280;
+  --success: #166534;
+  --success-bg: #dcfce7;
+  --warn: #92400e;
+  --warn-bg: #fef3c7;
+}
+body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; }
+#root { min-height: 100vh; }
+
+.topbar { background: var(--navy); color: white; padding: 0 2rem; height: 60px; display: flex; align-items: center; justify-content: space-between; position: sticky; top: 0; z-index: 100; box-shadow: 0 2px 8px rgba(0,0,0,0.3); }
+.topbar-brand { display: flex; align-items: center; gap: 12px; }
+.topbar-logo { width: 36px; height: 36px; background: var(--red); border-radius: 6px; display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 700; color: white; line-height: 1.2; text-align: center; }
+.topbar-title { font-size: 15px; font-weight: 600; letter-spacing: 0.02em; }
+.topbar-sub { font-size: 11px; opacity: 0.7; }
+.topbar-actions { display: flex; align-items: center; gap: 8px; }
+
+.main { max-width: 1100px; margin: 0 auto; padding: 2rem; }
+
+.step-bar { display: flex; align-items: center; gap: 0; margin-bottom: 2rem; background: white; border-radius: 12px; padding: 0; overflow: hidden; border: 1px solid var(--border); }
+.step { flex: 1; display: flex; align-items: center; gap: 10px; padding: 14px 20px; position: relative; cursor: default; }
+.step + .step::before { content: ""; position: absolute; left: 0; top: 50%; transform: translateY(-50%); width: 1px; height: 60%; background: var(--border); }
+.step.active { background: var(--navy); color: white; }
+.step.done { background: #f0fdf4; color: var(--success); }
+.step-num { width: 26px; height: 26px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 700; background: rgba(255,255,255,0.2); flex-shrink: 0; }
+.step.active .step-num { background: rgba(255,255,255,0.25); color: white; }
+.step.done .step-num { background: var(--success-bg); color: var(--success); }
+.step.inactive .step-num { background: #e5e7eb; color: var(--muted); }
+.step-label { font-size: 13px; font-weight: 500; }
+.step.inactive { color: var(--muted); }
+
+.card { background: var(--card); border: 1px solid var(--border); border-radius: 12px; padding: 1.5rem; margin-bottom: 1.5rem; }
+.card-header { display: flex; align-items: center; gap: 10px; margin-bottom: 1.25rem; padding-bottom: 1rem; border-bottom: 1px solid var(--border); }
+.card-icon { width: 32px; height: 32px; background: var(--navy); border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 14px; }
+.section-heading { font-size: 14px; font-weight: 700; color: var(--navy); text-transform: uppercase; letter-spacing: 0.08em; }
+.section-sub { font-size: 12px; color: var(--muted); margin-top: 2px; }
+
+.field-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+.field-grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 14px; }
+.col-span-2 { grid-column: span 2; }
+.col-span-3 { grid-column: span 3; }
+
+.field { display: flex; flex-direction: column; gap: 5px; }
+.field label { font-size: 12px; font-weight: 600; color: var(--muted); text-transform: uppercase; letter-spacing: 0.05em; }
+.field input, .field select, .field textarea {
+  padding: 9px 12px; border: 1px solid var(--border); border-radius: 8px;
+  font-size: 13px; color: var(--text); background: white;
+  transition: border-color 0.15s, box-shadow 0.15s;
+}
+.field input:focus, .field select:focus, .field textarea:focus {
+  outline: none; border-color: var(--navy); box-shadow: 0 0 0 3px rgba(26,26,62,0.1);
+}
+.field textarea { min-height: 90px; resize: vertical; line-height: 1.5; }
+.field.ai-filled input, .field.ai-filled select, .field.ai-filled textarea {
+  border-color: #6366f1; background: #f5f3ff;
+}
+
+.checkbox-section { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.check-row { display: flex; align-items: center; gap: 8px; padding: 8px 12px; border: 1px solid var(--border); border-radius: 8px; cursor: pointer; font-size: 13px; transition: background 0.1s; }
+.check-row:hover { background: #f8fafc; }
+.check-row input[type=checkbox] { width: 15px; height: 15px; accent-color: var(--navy); }
+
+.radio-inline { display: flex; gap: 16px; flex-wrap: wrap; padding: 9px 0; }
+.radio-inline label { display: flex; align-items: center; gap: 6px; font-size: 13px; cursor: pointer; color: var(--text); font-weight: normal; text-transform: none; letter-spacing: 0; }
+.radio-inline input[type=radio] { width: 14px; height: 14px; accent-color: var(--navy); }
+
+.btn { padding: 9px 20px; border-radius: 8px; font-size: 13px; font-weight: 600; cursor: pointer; border: none; display: inline-flex; align-items: center; gap: 8px; transition: all 0.15s; }
+.btn-navy { background: var(--navy); color: white; }
+.btn-navy:hover { background: var(--navy-mid); }
+.btn-outline { background: white; color: var(--navy); border: 1.5px solid var(--navy); }
+.btn-outline:hover { background: #f0f0f8; }
+.btn-red { background: var(--red); color: white; }
+.btn-red:hover { background: #a93226; }
+.btn-green { background: #166534; color: white; }
+.btn-green:hover { background: #14532d; }
+.btn-lg { padding: 12px 28px; font-size: 15px; border-radius: 10px; }
+.btn:disabled { opacity: 0.5; cursor: not-allowed; }
+.btn-icon { background: none; border: none; cursor: pointer; padding: 6px; border-radius: 6px; color: var(--muted); font-size: 18px; display: inline-flex; align-items: center; }
+.btn-icon:hover { background: #f0f0f0; color: var(--text); }
+
+.drop-zone { border: 2px dashed var(--border); border-radius: 12px; padding: 3rem 2rem; text-align: center; cursor: pointer; transition: border-color 0.2s, background 0.2s; }
+.drop-zone:hover, .drop-zone.drag-over { border-color: var(--navy); background: #f0f0f8; }
+.drop-zone-icon { font-size: 48px; margin-bottom: 1rem; }
+.drop-zone-title { font-size: 18px; font-weight: 600; color: var(--navy); margin-bottom: 8px; }
+.drop-zone-sub { font-size: 14px; color: var(--muted); }
+
+.alert { padding: 12px 16px; border-radius: 8px; font-size: 13px; margin-bottom: 1rem; display: flex; align-items: flex-start; gap: 10px; }
+.alert-info { background: #eff6ff; border: 1px solid #bfdbfe; color: #1e40af; }
+.alert-success { background: var(--success-bg); border: 1px solid #86efac; color: var(--success); }
+.alert-warn { background: var(--warn-bg); border: 1px solid #fcd34d; color: var(--warn); }
+
+.badge { display: inline-flex; align-items: center; gap: 4px; padding: 3px 10px; border-radius: 20px; font-size: 11px; font-weight: 600; }
+.badge-purple { background: #ede9fe; color: #5b21b6; }
+.badge-green { background: var(--success-bg); color: var(--success); }
+.badge-red { background: #fee2e2; color: #991b1b; }
+
+.progress-ring { display: flex; align-items: center; gap: 8px; font-size: 13px; color: var(--muted); }
+.spinner { display: inline-block; width: 18px; height: 18px; border: 2px solid rgba(255,255,255,0.3); border-top-color: white; border-radius: 50%; animation: spin 0.7s linear infinite; }
+@keyframes spin { to { transform: rotate(360deg); } }
+
+.verdict-card { border-radius: 12px; padding: 1.5rem; margin-bottom: 1.5rem; }
+.verdict-accept { background: var(--success-bg); border: 1.5px solid #86efac; }
+.verdict-decline { background: #fee2e2; border: 1.5px solid #fca5a5; }
+.verdict-review { background: var(--warn-bg); border: 1.5px solid #fcd34d; }
+.verdict-title { font-size: 20px; font-weight: 700; margin-bottom: 6px; }
+.verdict-reason { font-size: 14px; line-height: 1.6; }
+
+.score-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin: 1rem 0; }
+.score-box { background: white; border: 1px solid var(--border); border-radius: 10px; padding: 14px; text-align: center; }
+.score-num { font-size: 22px; font-weight: 700; }
+.score-label { font-size: 11px; color: var(--muted); margin-top: 2px; }
+.green-text { color: #166534; }
+.red-text { color: #991b1b; }
+.amber-text { color: #92400e; }
+
+.nav-bottom { display: flex; justify-content: space-between; align-items: center; padding-top: 1.5rem; border-top: 1px solid var(--border); margin-top: 1rem; }
+
+.tag { display: inline-block; background: #ede9fe; color: #5b21b6; border-radius: 6px; padding: 2px 8px; font-size: 11px; font-weight: 600; margin-left: 6px; }
+
+textarea.narrative { min-height: 160px; font-family: inherit; }
+
+@media (max-width: 700px) {
+  .field-grid, .field-grid-3 { grid-template-columns: 1fr; }
+  .col-span-2, .col-span-3 { grid-column: span 1; }
+  .score-grid { grid-template-columns: 1fr 1fr; }
+  .main { padding: 1rem; }
+  .step-label { font-size: 11px; }
+}
+</style>
+</head>
+<body>
+<div id="root"></div>
+<script type="text/babel">
+const { useState, useCallback, useRef } = React;
+
+const EMPTY_FORM = {
+  // Header
+  intakeDate: "", intakeMethod: "", intakeStaff: "", referralSource: "", attorneyAssigned: "", followUpDate: "",
+  // PNC Contact
+  fullName: "", preferredName: "", dob: "", address: "", primaryPhone: "", altPhone: "", email: "",
+  bestContact: "", preferredLanguage: "", emergencyContact: "", priorAttorney: "", priorAttorneyYN: "",
+  // Employment Status
+  defendant: "", isGovtEmployer: "", jobTitle: "", payRate: "", atWillOrContract: "",
+  startDate: "", endDate: "", supervisor: "", employmentStatus: "", terminationDate: "",
+  terminationEmployerReason: "", terminationClientBelief: "", severanceOffered: "", arbitrationAgreement: "", unionMember: "",
+  // Basis of Case
+  discriminationBelief: "", discriminationClasses: [], discriminationEvidence: "", oralAnimus: "", writtenAnimus: "",
+  sexualHarassment: "", protectedClassHarassment: "", harassmentDetails: "",
+  // Disability / Leave
+  hasDisability: "", disabilityNature: "", disabilityDate: "", accommodationRequested: "", accommodationGranted: "",
+  adverseActionDisability: "", leaveTypes: [], leaveReason: "", leaveGranted: "", terminatedAfterLeave: "",
+  // Wage & Hour
+  exemptStatus: "", hourlyOrSalary: "", mealRestBreaks: "", mealRestDetails: "",
+  overtimePaid: "", overtimeDetails: "", finalPaycheckTimely: "", tipsIssues: "",
+  // Damages
+  lostWages: "", lostBenefits: "", postTermEarnings: "", medicalTreatment: "", emotionalDistress: "",
+  // Evidence
+  witnessNames: "", evidenceDocs: [], audioRecordings: "", socialMedia: "",
+  // Staff Notes
+  credibilityNotes: "", redFlags: "", caseStrengths: "", actionItems: "", recommendation: "",
+  // AI Analysis
+  _verdict: "", _verdictReason: "", _meritScore: "", _damagesPotential: "", _riskLevel: "", _solUrgency: "",
+  _claimsAnalysis: "", _solNote: "", _strengths: [], _concerns: [], _nextSteps: [],
+};
+
+const DISC_CLASSES = ["Race","Color","National Origin/Ancestry","Religion","Sex/Gender","Sexual Orientation","Gender Identity","Age (40+)","Disability/Medical","Genetic Info","Marital Status","Pregnancy","Military/Veteran","Other"];
+const LEAVE_TYPES = ["FMLA","CFRA","PDL (Pregnancy)","CA Paid Sick Leave","Paid Family Leave","Bereavement Leave","Crime Victim Leave","Workers Comp Leave","Other"];
+const EVIDENCE_DOCS = ["Offer letter","Employee handbook","Arbitration agreement","Pay stubs/wage statements","W-2/1099","Performance reviews","Written warnings","Emails","Text messages","Internal complaints","Termination letter","Medical records","Therapy records","Photos of injuries","Social media screenshots","Recordings"];
+
+function Field({label, name, form, setForm, type="text", options=[], rows=3, aiField=false, children, placeholder=""}) {
+  const val = form[name] ?? "";
+  const cls = "field" + (aiField && val ? " ai-filled" : "");
+  const update = e => setForm(f => ({...f, [name]: e.target.value}));
+  return (
+    <div className={cls}>
+      <label>{label}{aiField && val ? <span className="tag">AI</span> : null}</label>
+      {type === "textarea" ? <textarea rows={rows} value={val} onChange={update} placeholder={placeholder} className={name==="narrative"?"narrative":""} /> :
+       type === "select" ? <select value={val} onChange={update}><option value="">Select...</option>{options.map(o => <option key={o} value={o}>{o}</option>)}</select> :
+       type === "radio" ? <div className="radio-inline">{options.map(o => <label key={o}><input type="radio" name={name} value={o} checked={val===o} onChange={update}/>{o}</label>)}</div> :
+       <input type={type} value={val} onChange={update} placeholder={placeholder} />}
+      {children}
+    </div>
+  );
+}
+
+function CheckGroup({label, name, form, setForm, options}) {
+  const vals = form[name] || [];
+  const toggle = (o) => {
+    const next = vals.includes(o) ? vals.filter(x=>x!==o) : [...vals, o];
+    setForm(f => ({...f, [name]: next}));
+  };
+  return (
+    <div className="field col-span-2">
+      <label>{label}</label>
+      <div className="checkbox-section">
+        {options.map(o => (
+          <label key={o} className="check-row">
+            <input type="checkbox" checked={vals.includes(o)} onChange={()=>toggle(o)}/>
+            {o}
+          </label>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function StepBar({step}) {
+  const steps = ["Import & Extract","Contact & Employment","Claims & Evidence","Review & Analyze","Download PDF"];
+  return (
+    <div className="step-bar">
+      {steps.map((s,i) => (
+        <div key={i} className={"step " + (i+1===step?"active":i+1<step?"done":"inactive")}>
+          <div className="step-num">{i+1<step?"✓":i+1}</div>
+          <div className="step-label">{s}</div>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+// ---- STEP 1: Import ----
+function Step1({onExtracted}) {
+  const [text, setText] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
+  const [dragOver, setDragOver] = useState(false);
+  const [fileName, setFileName] = useState("");
+  const fileRef = useRef();
+
+  const readFile = async (file) => {
+    setFileName(file.name);
+    setError("");
+    const ext = file.name.split(".").pop().toLowerCase();
+    if (!["txt","pdf","docx"].includes(ext)) {
+      setError("Unsupported file type. Please use PDF, Word (.docx), or plain text (.txt).");
+      return;
+    }
+    if (ext === "txt") {
+      const reader = new FileReader();
+      reader.onload = e => setText(e.target.result);
+      reader.readAsText(file);
+    } else {
+      // Send to server for extraction (PDF and DOCX)
+      try {
+        const fd = new FormData();
+        fd.append("file", file);
+        const res = await fetch("/api/extract-text", { method:"POST", body: fd });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error);
+        setText(data.text);
+      } catch(e) {
+        setError("File read error: " + e.message);
+      }
+    }
+  };
+
+  const handleDrop = (e) => {
+    e.preventDefault(); setDragOver(false);
+    const file = e.dataTransfer.files[0];
+    if (file) readFile(file);
+  };
+
+  const extractWithClaude = async () => {
+    if (!text.trim()) { setError("Please paste or upload an intake document first."); return; }
+    setLoading(true); setError("");
+    try {
+      const today = new Date().toISOString().split("T")[0];
+      const prompt = `You are an expert legal intake analyst for a California employment law firm. Extract ALL available information from this intake document into structured JSON. Be thorough — capture everything mentioned.
+
+INTAKE DOCUMENT:
+${text.slice(0, 12000)}
+
+Return ONLY valid JSON (no markdown, no backticks). Map to these exact keys:
+{
+  "fullName": "", "preferredName": "", "dob": "", "address": "", "primaryPhone": "", "altPhone": "", "email": "",
+  "bestContact": "", "preferredLanguage": "", "emergencyContact": "", "priorAttorney": "", "priorAttorneyYN": "",
+  "defendant": "", "isGovtEmployer": "", "jobTitle": "", "payRate": "", "atWillOrContract": "At-Will",
+  "startDate": "", "endDate": "", "supervisor": "", "employmentStatus": "Terminated", "terminationDate": "",
+  "terminationEmployerReason": "", "terminationClientBelief": "", "severanceOffered": "No", "arbitrationAgreement": "",
+  "unionMember": "No", "discriminationBelief": "Yes", "discriminationClasses": [],
+  "discriminationEvidence": "", "oralAnimus": "", "writtenAnimus": "",
+  "sexualHarassment": "No", "protectedClassHarassment": "", "harassmentDetails": "",
+  "hasDisability": "", "disabilityNature": "", "disabilityDate": "", "accommodationRequested": "",
+  "accommodationGranted": "", "adverseActionDisability": "", "leaveTypes": [], "leaveReason": "",
+  "leaveGranted": "", "terminatedAfterLeave": "", "exemptStatus": "Non-exempt", "hourlyOrSalary": "Hourly",
+  "mealRestBreaks": "", "mealRestDetails": "", "overtimePaid": "", "overtimeDetails": "",
+  "finalPaycheckTimely": "", "tipsIssues": "", "lostWages": "", "lostBenefits": "",
+  "postTermEarnings": "", "medicalTreatment": "", "emotionalDistress": "",
+  "witnessNames": "", "evidenceDocs": [], "audioRecordings": "", "socialMedia": "",
+  "credibilityNotes": "", "redFlags": "", "caseStrengths": "", "actionItems": "", "recommendation": "",
+  "intakeDate": "${today}", "intakeMethod": "", "intakeStaff": "",
+  "referralSource": "", "attorneyAssigned": "", "followUpDate": ""
+}`;
+
+      const res = await fetch("/api/claude", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ model:"claude-sonnet-4-5", max_tokens:2000, messages:[{role:"user", content:prompt}] })
+      });
+      if (!res.ok) {
+        const err = await res.json().catch(()=>({}));
+        throw new Error(err.error?.message || err.error || "Server error " + res.status);
+      }
+      const data = await res.json();
+      const raw = data.content.map(c => c.text||"").join("");
+      let clean = raw.replace(/```json|```/g,"").trim();
       // Fix common JSON issues: smart quotes, unterminated strings
       clean = clean
         .replace(/[‘’]/g, "\'")
@@ -651,10 +979,7 @@ Respond ONLY with valid JSON (no markdown, no backticks):
       }
       const data = await res.json();
       const raw = data.content.map(c=>c.text||"").join("");
-      let clean = raw.replace(/```json|```/g,"").trim()
-        .replace(/[‘’]/g, "\'")
-        .replace(/[“”]/g, '\"')
-        .replace(/[–—]/g, "-");
+      let clean = raw.replace(/```json|```/g,"").trim();
       const jsonStart = clean.indexOf("{");
       const jsonEnd = clean.lastIndexOf("}");
       if (jsonStart !== -1 && jsonEnd !== -1) clean = clean.slice(jsonStart, jsonEnd + 1);
