@@ -1,4 +1,3 @@
-// env vars injected by Railway directly
 const express = require("express");
 const cors = require("cors");
 const multer = require("multer");
@@ -19,11 +18,11 @@ app.use(cors());
 app.use(express.json({ limit: "10mb" }));
 app.use(express.static(path.join(__dirname, "public")));
 
-// ── AI proxy — API key stays on server, staff never see it ──────────────────
+// ── AI proxy — API key stays on server ──────────────────────────────────────
 app.post("/api/claude", async (req, res) => {
   const ANTHROPIC_API_KEY = process.env.ANTHROPIC_API_KEY;
   if (!ANTHROPIC_API_KEY || ANTHROPIC_API_KEY.includes("PASTE-YOUR-KEY")) {
-    return res.status(500).json({ error: "API key not configured on server. Open the .env file and add your Anthropic API key." });
+    return res.status(500).json({ error: "API key not configured on server." });
   }
   try {
     const response = await fetch("https://api.anthropic.com/v1/messages", {
@@ -47,12 +46,22 @@ app.post("/api/claude", async (req, res) => {
 app.post("/api/extract-text", upload.single("file"), async (req, res) => {
   if (!req.file) return res.status(400).json({ error: "No file uploaded" });
   const ext = req.file.originalname.split(".").pop().toLowerCase();
+
   try {
+    // Plain text
     if (ext === "txt") {
       return res.json({ text: req.file.buffer.toString("utf8") });
     }
+
+    // Word document
+    if (ext === "docx") {
+      const mammoth = require("mammoth");
+      const result = await mammoth.extractRawText({ buffer: req.file.buffer });
+      return res.json({ text: result.value });
+    }
+
+    // PDF — send to Claude as a native document for best extraction
     if (ext === "pdf") {
-      // Use Claude to read the PDF natively - most accurate extraction
       const ANTHROPIC_API_KEY = process.env.ANTHROPIC_API_KEY;
       if (!ANTHROPIC_API_KEY || ANTHROPIC_API_KEY.includes("PASTE-YOUR-KEY")) {
         return res.status(500).json({ error: "API key not configured on server." });
@@ -84,16 +93,15 @@ app.post("/api/extract-text", upload.single("file"), async (req, res) => {
         })
       });
       const data = await response.json();
-      if (!response.ok) return res.status(response.status).json({ error: data.error?.message || "Claude API error" });
+      if (!response.ok) {
+        return res.status(response.status).json({ error: data.error?.message || "Claude API error" });
+      }
       const text = data.content.map(c => c.text || "").join("");
       return res.json({ text });
     }
-    if (ext === "docx") {
-      const mammoth = require("mammoth");
-      const result = await mammoth.extractRawText({ buffer: req.file.buffer });
-      return res.json({ text: result.value });
-    }
+
     res.status(400).json({ error: "Unsupported file type. Use PDF, .docx, or .txt" });
+
   } catch (e) {
     res.status(500).json({ error: "File extraction failed: " + e.message });
   }
@@ -141,6 +149,7 @@ app.get("/intake-template.pdf", (req, res) => {
   else res.status(404).send("Template not found");
 });
 
+// ── Catch-all → index.html ────────────────────────────────────────────────────
 app.get("/{*splat}", (req, res) => {
   res.sendFile(path.join(__dirname, "public", "index.html"));
 });
