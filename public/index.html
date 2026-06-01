@@ -416,8 +416,26 @@ function S5({f,bk}){
       y=fld(p,"Breaks",f.mealRestBreaks,M,y);y=blk(p,"Break Details",f.mealRestDetails,M,y);y=fld(p,"OT Paid",f.overtimePaid,M,y);y-=10;
       y=sec(p,"Evidence & Notes",y);y-=8;
       y=blk(p,"Witnesses",f.witnessNames,M,y);y=blk(p,"Documents",toArr(f.evidenceDocs).join(", "),M,y);y=blk(p,"Strengths",f.caseStrengths,M,y);y=blk(p,"Action Items",f.actionItems,M,y);y-=10;
-      if(f.recommendation){p.drawRectangle({x:M-5,y:y-20,width:W-2*M+10,height:28,color:rgb(.86,.97,.88)});p.drawText("RECOMMENDATION: "+sa(f.recommendation),{x:M,y:y-12,size:10,font:fb,color:rgb(.06,.4,.2)});y-=38;}
-      if(f._verdict){const vc2=f._verdict==="ACCEPT"?rgb(.06,.4,.2):f._verdict==="DECLINE"?rgb(.75,.1,.1):rgb(.5,.3,0);p.drawText("AI: "+f._verdict+" - "+sa(f._verdictReason),{x:M,y:Math.max(y,60),size:9,font:fb,color:vc2});}
+      if(f.recommendation){
+        const recWords=sa(f.recommendation).split(' ');let recLine='',recLines=[];
+        for(const w of recWords){if(('RECOMMENDATION: '+recLine+' '+w).length>75){recLines.push(recLine);recLine=w;}else recLine=recLine?recLine+' '+w:w;}
+        if(recLine)recLines.push(recLine);
+        const recH=recLines.length*16+20;
+        p.drawRectangle({x:M-5,y:y-recH+8,width:W-2*M+10,height:recH,color:rgb(.86,.97,.88)});
+        let recY=y-4;
+        p.drawText('RECOMMENDATION:',{x:M,y:recY,size:9,font:fb,color:rgb(.06,.4,.2)});recY-=14;
+        for(const l of recLines){p.drawText(l,{x:M+10,y:recY,size:9,font:fb,color:rgb(.06,.4,.2)});recY-=13;}
+        y=recY-8;
+      }
+      if(f._verdict){
+        const vc2=f._verdict==='ACCEPT'?rgb(.06,.4,.2):f._verdict==='DECLINE'?rgb(.75,.1,.1):rgb(.5,.3,0);
+        const aiWords=('AI VERDICT: '+f._verdict+' - '+sa(f._verdictReason)).split(' ');
+        let aiLine='',aiLines=[];
+        for(const w of aiWords){if((aiLine+' '+w).length>80){aiLines.push(aiLine);aiLine=w;}else aiLine=aiLine?aiLine+' '+w:w;}
+        if(aiLine)aiLines.push(aiLine);
+        let aiY=Math.max(y,80);
+        for(const l of aiLines.slice(0,5)){p.drawText(l,{x:M,y:aiY,size:9,font:fb,color:vc2});aiY-=13;}
+      }
       p.drawText("Generated: "+new Date().toLocaleString(),{x:M,y:50,size:7,font:fn2,color:gy});
       p.drawText("CONFIDENTIAL & PRIVILEGED - ATTORNEY WORK PRODUCT",{x:M,y:38,size:7,font:fb,color:rd});
       const bytes=await doc.save();
