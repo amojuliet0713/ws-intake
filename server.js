@@ -7,7 +7,6 @@ const fs = require("fs");
 const app = express();
 const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 20 * 1024 * 1024 } });
 
-// Allow Teams to embed in iframe
 app.use((req, res, next) => {
   res.removeHeader("X-Frame-Options");
   res.setHeader("Content-Security-Policy", "frame-ancestors 'self' https://teams.microsoft.com https://*.teams.microsoft.com https://*.skype.com");
@@ -18,18 +17,24 @@ app.use(cors());
 app.use(express.json({ limit: "10mb" }));
 app.use(express.static(path.join(__dirname, "public")));
 
-// ── AI proxy — API key stays on server ──────────────────────────────────────
+function getKey() {
+  // Strip any surrounding quotes Railway might add
+  const key = (process.env.ANTHROPIC_API_KEY || "").trim().replace(/^["']|["']$/g, "");
+  return key;
+}
+
+// ── AI proxy ──────────────────────────────────────────────────────────────────
 app.post("/api/claude", async (req, res) => {
-  const ANTHROPIC_API_KEY = process.env.ANTHROPIC_API_KEY;
-  if (!ANTHROPIC_API_KEY || ANTHROPIC_API_KEY.includes("PASTE-YOUR-KEY")) {
-    return res.status(500).json({ error: "API key not configured on server." });
+  const key = getKey();
+  if (!key || !key.startsWith("sk-")) {
+    return res.status(500).json({ error: "API key not configured. Key value: " + (key ? key.slice(0,10) + "..." : "empty") });
   }
   try {
     const response = await fetch("https://api.anthropic.com/v1/messages", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        "x-api-key": ANTHROPIC_API_KEY,
+        "x-api-key": key,
         "anthropic-version": "2023-06-01",
       },
       body: JSON.stringify(req.body),
@@ -42,36 +47,33 @@ app.post("/api/claude", async (req, res) => {
   }
 });
 
-// ── File text extraction ─────────────────────────────────────────────────────
+// ── File text extraction ──────────────────────────────────────────────────────
 app.post("/api/extract-text", upload.single("file"), async (req, res) => {
   if (!req.file) return res.status(400).json({ error: "No file uploaded" });
   const ext = req.file.originalname.split(".").pop().toLowerCase();
 
   try {
-    // Plain text
     if (ext === "txt") {
       return res.json({ text: req.file.buffer.toString("utf8") });
     }
 
-    // Word document
     if (ext === "docx") {
       const mammoth = require("mammoth");
       const result = await mammoth.extractRawText({ buffer: req.file.buffer });
       return res.json({ text: result.value });
     }
 
-    // PDF — send to Claude as a native document for best extraction
     if (ext === "pdf") {
-      const ANTHROPIC_API_KEY = process.env.ANTHROPIC_API_KEY;
-      if (!ANTHROPIC_API_KEY || ANTHROPIC_API_KEY.includes("PASTE-YOUR-KEY")) {
-        return res.status(500).json({ error: "API key not configured on server." });
+      const key = getKey();
+      if (!key || !key.startsWith("sk-")) {
+        return res.status(500).json({ error: "API key not configured. Raw value starts with: " + (process.env.ANTHROPIC_API_KEY || "").slice(0,15) });
       }
       const base64pdf = req.file.buffer.toString("base64");
       const response = await fetch("https://api.anthropic.com/v1/messages", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          "x-api-key": ANTHROPIC_API_KEY,
+          "x-api-key": key,
           "anthropic-version": "2023-06-01",
         },
         body: JSON.stringify({
@@ -107,55 +109,41 @@ app.post("/api/extract-text", upload.single("file"), async (req, res) => {
   }
 });
 
-// ── Teams config page ────────────────────────────────────────────────────────
+// ── Teams config ──────────────────────────────────────────────────────────────
 app.get("/teams-config", (req, res) => {
-  res.send(`<!DOCTYPE html>
-<html>
-<head>
-  <title>Intake System Config</title>
-  <script src="https://res.cdn.office.net/teams-js/2.0.0/js/MicrosoftTeams.min.js"></script>
-</head>
-<body style="font-family:sans-serif;padding:2rem;background:#f4f6f9">
-  <h2 style="color:#1a1a3e">Williams & Seemen Intake System</h2>
-  <p>Click Save to add this tab to your Teams channel.</p>
-  <script>
-    microsoftTeams.app.initialize().then(() => {
-      microsoftTeams.pages.config.registerOnSaveHandler((saveEvent) => {
-        microsoftTeams.pages.config.setConfig({
-          suggestedDisplayName: "Intake System",
-          entityId: "intake",
-          contentUrl: window.location.origin + "/",
-          websiteUrl: window.location.origin + "/"
-        });
-        saveEvent.notifySuccess();
-      });
-      microsoftTeams.pages.config.setValidityState(true);
-    });
-  </script>
-</body>
-</html>`);
+  res.send(`<!DOCTYPE html><html><head><title>Config</title></head><body>
+  <h2>Williams & Seemen Intake System</h2><p>Click Save to add tab.</p></body></html>`);
 });
 
-// ── Health check ─────────────────────────────────────────────────────────────
+// ── Health check ──────────────────────────────────────────────────────────────
 app.get("/health", (req, res) => {
-  const keySet = !!(process.env.ANTHROPIC_API_KEY && !process.env.ANTHROPIC_API_KEY.includes("PASTE-YOUR-KEY"));
-  res.json({ status: "ok", apiKeyConfigured: keySet });
+  const raw = process.env.ANTHROPIC_API_KEY || "";
+  const key = getKey();
+  res.json({
+    status: "ok",
+    rawLength: raw.length,
+    rawStart: raw.slice(0, 10),
+    cleanedStart: key.slice(0, 10),
+    startsWithSk: key.startsWith("sk-"),
+    apiKeyConfigured: key.startsWith("sk-")
+  });
 });
 
-// ── Serve intake PDF template ─────────────────────────────────────────────────
+// ── Serve PDF template ────────────────────────────────────────────────────────
 app.get("/intake-template.pdf", (req, res) => {
   const p = path.join(__dirname, "Employment_Intake_Form.pdf");
   if (fs.existsSync(p)) res.sendFile(p);
   else res.status(404).send("Template not found");
 });
 
-// ── Catch-all → index.html ────────────────────────────────────────────────────
 app.get("/{*splat}", (req, res) => {
   res.sendFile(path.join(__dirname, "public", "index.html"));
 });
 
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
+  const key = getKey();
   console.log(`\n✅  W&S Intake System → http://localhost:${PORT}`);
-  console.log(`🔑  API key configured: ${!!(process.env.ANTHROPIC_API_KEY && !process.env.ANTHROPIC_API_KEY.includes("PASTE"))}\n`);
+  console.log(`🔑  API key starts with: ${key.slice(0, 15)}...`);
+  console.log(`🔑  API key valid: ${key.startsWith("sk-")}\n`);
 });
