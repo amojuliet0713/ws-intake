@@ -52,6 +52,19 @@ app.post("/api/extract-text", upload.single("file"), async (req, res) => {
       return res.json({ text: req.file.buffer.toString("utf8") });
     }
     if (ext === "pdf") {
+      // Stub browser APIs that pdf-parse needs in Node.js environment
+      if (typeof globalThis.DOMMatrix === "undefined") {
+        globalThis.DOMMatrix = class DOMMatrix {
+          constructor() { this.a=1;this.b=0;this.c=0;this.d=1;this.e=0;this.f=0; }
+          multiply(){return this;}translate(){return this;}scale(){return this;}rotate(){return this;}inverse(){return this;}
+        };
+      }
+      if (typeof globalThis.Path2D === "undefined") globalThis.Path2D = class Path2D {};
+      if (typeof globalThis.ImageData === "undefined") {
+        globalThis.ImageData = class ImageData {
+          constructor(w,h){this.width=w;this.height=h;this.data=new Uint8ClampedArray(w*h*4);}
+        };
+      }
       const pdfParse = require("pdf-parse");
       const data = await pdfParse(req.file.buffer);
       return res.json({ text: data.text });
