@@ -190,17 +190,467 @@ function Step1({onExtracted}){
     setLoading(true);setError("");
     try{
       const today=new Date().toISOString().split("T")[0];
-      const prompt=`You are an expert legal intake analyst for a California employment law firm. Extract ALL available information from this intake document into structured JSON. Be thorough. IMPORTANT: Use only plain ASCII characters in your response. Replace all special characters: use regular quotes instead of smart quotes, use hyphens instead of dashes, avoid pipe characters or special symbols.
+      const prompt="You are an expert legal intake analyst for a California employment law firm. Extract ALL available information from this intake document into structured JSON. Be thorough.
 
 INTAKE DOCUMENT:
-${text.slice(0,12000)}
+"+text.slice(0,12000)+"
 
-Return ONLY a JSON object (no markdown, no backticks, no extra text) with these keys filled from the document. Use empty string for missing values:
-fullName, preferredName, dob, address, primaryPhone, altPhone, email, bestContact, preferredLanguage, emergencyContact, priorAttorney, priorAttorneyYN, defendant, isGovtEmployer, jobTitle, payRate, atWillOrContract, startDate, endDate, supervisor, employmentStatus, terminationDate, terminationEmployerReason, terminationClientBelief, severanceOffered, arbitrationAgreement, unionMember, discriminationBelief, discriminationClasses (array), discriminationEvidence, oralAnimus, writtenAnimus, sexualHarassment, harassmentDetails, hasDisability, disabilityNature, disabilityDate, accommodationRequested, accommodationGranted, adverseActionDisability, leaveTypes (array), leaveReason, leaveGranted, terminatedAfterLeave, exemptStatus, hourlyOrSalary, mealRestBreaks, mealRestDetails, overtimePaid, overtimeDetails, finalPaycheckTimely, lostWages, lostBenefits, medicalTreatment, emotionalDistress, witnessNames, evidenceDocs (array), credibilityNotes, redFlags, caseStrengths, actionItems, recommendation, intakeDate (use "${today}"), intakeMethod, intakeStaff, referralSource, attorneyAssigned, followUpDate.`;
-      const res=await fetch("/api/claude",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({model:"claude-haiku-4-5-20251001",max_tokens:4000,messages:[{role:"user",content:prompt}]})});
+Return ONLY valid JSON with these exact keys:
+{"fullName":"","preferredName":"","dob":"","address":"","primaryPhone":"","altPhone":"","email":"","bestContact":"","preferredLanguage":"","emergencyContact":"","priorAttorney":"","priorAttorneyYN":"","defendant":"","isGovtEmployer":"","jobTitle":"","payRate":"","atWillOrContract":"At-Will","startDate":"","endDate":"","supervisor":"","employmentStatus":"Terminated","terminationDate":"","terminationEmployerReason":"","terminationClientBelief":"","severanceOffered":"No","arbitrationAgreement":"","unionMember":"No","discriminationBelief":"","discriminationClasses":[],"discriminationEvidence":"","oralAnimus":"","writtenAnimus":"","sexualHarassment":"No","protectedClassHarassment":"","harassmentDetails":"","hasDisability":"","disabilityNature":"","disabilityDate":"","accommodationRequested":"","accommodationGranted":"","adverseActionDisability":"","leaveTypes":[],"leaveReason":"","leaveGranted":"","terminatedAfterLeave":"","exemptStatus":"Non-exempt","hourlyOrSalary":"Hourly","mealRestBreaks":"","mealRestDetails":"","overtimePaid":"","overtimeDetails":"","finalPaycheckTimely":"","tipsIssues":"","lostWages":"","lostBenefits":"","postTermEarnings":"","medicalTreatment":"","emotionalDistress":"","witnessNames":"","evidenceDocs":[],"audioRecordings":"","socialMedia":"","credibilityNotes":"","redFlags":"","caseStrengths":"","actionItems":"","recommendation":"","intakeDate":""+today+"","intakeMethod":"","intakeStaff":"","referralSource":"","attorneyAssigned":"","followUpDate":""}";
+      const res=await fetch("/api/claude",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({model:"claude-haiku-4-5-20251001",max_tokens:2000,messages:[{role:"user",content:prompt}]})});
       if(!res.ok){const err=await res.json().catch(()=>({}));throw new Error(err.error?.message||err.error||"Server error "+res.status);}
       const data=await res.json();
       const raw=data.content.map(c=>c.text||"").join("");
-      let clean1=raw.replace(/```json/g,"").replace(/```/g,"").trim();
-      // Remove all non-ASCII characters that break JSON
-      clean1=clean1.replace(/[‘’]/g,"'").replace(/[“”]/g,'"').replace(/[–—]/g,"-").replace(/[^
+      const s=raw.indexOf("{");const e2=raw.lastIndexOf("}");
+      const clean=s!==-1&&e2!==-1?raw.slice(s,e2+1):raw;
+      const extracted=JSON.parse(clean);
+      onExtracted({...EMPTY_FORM,...extracted});
+    }catch(e){setError("Extraction failed: "+e.message);}
+    setLoading(false);
+  };
+
+  return(
+    <div>
+      <div className="card">
+        <div className="card-header"><div className="card-icon">📄</div><div><div className="section-heading">Import Intake Document</div><div className="section-sub">Upload PDF, Word (.docx), or plain text — or paste text directly</div></div></div>
+        <div className={"drop-zone"+(dragOver?" drag-over":"")} style={{marginBottom:"1rem",cursor:"pointer"}} onDragOver={e=>{e.preventDefault();setDragOver(true);}} onDragLeave={()=>setDragOver(false)} onDrop={handleDrop} onClick={()=>fileRef.current.click()}>
+          <div className="drop-zone-icon">{fileName?"✅":"📂"}</div>
+          <div className="drop-zone-title">{fileName?fileName:"Drop file here or click to browse"}</div>
+          <div className="drop-zone-sub">Supports PDF, Word (.docx), and plain text (.txt)</div>
+          <input ref={fileRef} type="file" accept=".txt,.pdf,.docx" style={{display:"none"}} onChange={e=>{if(e.target.files[0])readFile(e.target.files[0]);}}/>
+        </div>
+        <div className="field" style={{marginBottom:"1rem"}}>
+          <label>Or paste intake document text directly</label>
+          <textarea rows={10} value={text} onChange={e=>setText(e.target.value)} placeholder="Paste the full intake document here..." style={{fontFamily:"monospace",fontSize:"12px"}}/>
+        </div>
+        {error&&<div className="alert alert-warn">⚠️ {error}</div>}
+        <div className="alert alert-info">💡 Claude will read the document and auto-populate all 60+ intake form fields. Fields filled by AI will be highlighted so you can review them.</div>
+        <div style={{display:"flex",gap:"10px",justifyContent:"flex-end"}}>
+          <button className="btn btn-outline" onClick={()=>onExtracted({...EMPTY_FORM})}>Start blank form</button>
+          <button className="btn btn-navy btn-lg" onClick={extractWithClaude} disabled={loading||!text.trim()}>
+            {loading?<><span className="spinner"/>&nbsp;Extracting with AI...</>:"🤖 Extract & populate form →"}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function Step2({form,setForm,onNext,onBack}){
+  return(
+    <div>
+      <div className="card">
+        <div className="card-header"><div className="card-icon">📋</div><div><div className="section-heading">Intake Header</div></div></div>
+        <div className="field-grid">
+          <Field label="Intake Date" name="intakeDate" type="date" form={form} setForm={setForm} aiField/>
+          <Field label="Intake Method" name="intakeMethod" type="select" options={["Phone","In-Person","Zoom","Email"]} form={form} setForm={setForm} aiField/>
+          <Field label="Intake Staff Name" name="intakeStaff" form={form} setForm={setForm}/>
+          <Field label="Referral Source" name="referralSource" form={form} setForm={setForm} aiField/>
+          <Field label="Attorney Assigned" name="attorneyAssigned" form={form} setForm={setForm}/>
+          <Field label="Follow-Up Date" name="followUpDate" type="date" form={form} setForm={setForm}/>
+        </div>
+      </div>
+      <div className="card">
+        <div className="card-header"><div className="card-icon">👤</div><div><div className="section-heading">PNC Contact Information</div></div></div>
+        <div className="field-grid">
+          <Field label="Full Legal Name" name="fullName" form={form} setForm={setForm} aiField/>
+          <Field label="Preferred Name" name="preferredName" form={form} setForm={setForm} aiField/>
+          <Field label="Date of Birth" name="dob" type="date" form={form} setForm={setForm} aiField/>
+          <Field label="Primary Phone" name="primaryPhone" form={form} setForm={setForm} aiField/>
+          <Field label="Email Address" name="email" form={form} setForm={setForm} aiField/>
+          <Field label="Alternate Phone" name="altPhone" form={form} setForm={setForm} aiField/>
+          <Field label="Mailing Address" name="address" form={form} setForm={setForm} aiField className="col-span-2"/>
+          <Field label="Best Time to Contact" name="bestContact" form={form} setForm={setForm} aiField/>
+          <Field label="Preferred Language" name="preferredLanguage" form={form} setForm={setForm} aiField/>
+          <Field label="Emergency Contact" name="emergencyContact" form={form} setForm={setForm} aiField/>
+          <div className="field">
+            <label>Prior Attorney Consulted?</label>
+            <div className="radio-inline">{["Yes","No","Unknown"].map(o=><label key={o}><input type="radio" name="priorAttorneyYN" value={o} checked={form.priorAttorneyYN===o} onChange={()=>setForm(f=>({...f,priorAttorneyYN:o}))}/>{o}</label>)}</div>
+          </div>
+          {form.priorAttorneyYN==="Yes"&&<Field label="Prior Attorney Name/Firm" name="priorAttorney" form={form} setForm={setForm} aiField/>}
+        </div>
+      </div>
+      <div className="card">
+        <div className="card-header"><div className="card-icon">🏢</div><div><div className="section-heading">Employment Status with Defendant</div></div></div>
+        <div className="field-grid">
+          <Field label="Defendant / Employer (Full Legal Name)" name="defendant" form={form} setForm={setForm} aiField/>
+          <div className="field"><label>Government Employer?</label><div className="radio-inline">{["Yes","No","Unknown"].map(o=><label key={o}><input type="radio" name="isGovtEmployer" value={o} checked={form.isGovtEmployer===o} onChange={()=>setForm(f=>({...f,isGovtEmployer:o}))}/>{o}</label>)}</div></div>
+          <Field label="Last Official Job Title" name="jobTitle" form={form} setForm={setForm} aiField/>
+          <Field label="Pay Rate" name="payRate" form={form} setForm={setForm} aiField/>
+          <div className="field"><label>At-Will or Contract?</label><div className="radio-inline">{["At-Will","Written Contract","Oral Contract","Unknown"].map(o=><label key={o}><input type="radio" name="atWillOrContract" value={o} checked={form.atWillOrContract===o} onChange={()=>setForm(f=>({...f,atWillOrContract:o}))}/>{o}</label>)}</div></div>
+          <div className="field"><label>Employment Status</label><div className="radio-inline">{["Still Employed","Resigned","Terminated","On Leave","Laid Off"].map(o=><label key={o}><input type="radio" name="employmentStatus" value={o} checked={form.employmentStatus===o} onChange={()=>setForm(f=>({...f,employmentStatus:o}))}/>{o}</label>)}</div></div>
+          <Field label="Start Date" name="startDate" type="date" form={form} setForm={setForm} aiField/>
+          <Field label="Termination Date" name="terminationDate" type="date" form={form} setForm={setForm} aiField/>
+          <Field label="Last Direct Supervisor" name="supervisor" form={form} setForm={setForm} aiField/>
+          <div className="field"><label>Arbitration Agreement?</label><div className="radio-inline">{["Yes","No","Unknown"].map(o=><label key={o}><input type="radio" name="arbitrationAgreement" value={o} checked={form.arbitrationAgreement===o} onChange={()=>setForm(f=>({...f,arbitrationAgreement:o}))}/>{o}</label>)}</div></div>
+          <div className="field"><label>Union Member?</label><div className="radio-inline">{["Yes","No","Unknown"].map(o=><label key={o}><input type="radio" name="unionMember" value={o} checked={form.unionMember===o} onChange={()=>setForm(f=>({...f,unionMember:o}))}/>{o}</label>)}</div></div>
+          <Field label="Severance Offered?" name="severanceOffered" type="select" options={["Yes","No","N/A"]} form={form} setForm={setForm} aiField/>
+          <Field label="Employer Stated Reason for Termination" name="terminationEmployerReason" type="textarea" rows={2} form={form} setForm={setForm} aiField/>
+          <Field label="Client Belief as to Actual Reason" name="terminationClientBelief" type="textarea" rows={2} form={form} setForm={setForm} aiField/>
+        </div>
+      </div>
+      <div className="nav-bottom">
+        <button className="btn btn-outline" onClick={onBack}>← Back</button>
+        <button className="btn btn-navy btn-lg" onClick={onNext}>Claims & Evidence →</button>
+      </div>
+    </div>
+  );
+}
+
+function Step3({form,setForm,onNext,onBack}){
+  return(
+    <div>
+      <div className="card">
+        <div className="card-header"><div className="card-icon">⚖️</div><div><div className="section-heading">Basis of Case — FEHA & Discrimination</div></div></div>
+        <div className="field-grid">
+          <div className="field"><label>Discrimination Alleged?</label><div className="radio-inline">{["Yes","No","Unknown"].map(o=><label key={o}><input type="radio" name="discriminationBelief" value={o} checked={form.discriminationBelief===o} onChange={()=>setForm(f=>({...f,discriminationBelief:o}))}/>{o}</label>)}</div></div>
+          <div className="field"><label>Sexual Harassment?</label><div className="radio-inline">{["Yes","No","Unknown"].map(o=><label key={o}><input type="radio" name="sexualHarassment" value={o} checked={form.sexualHarassment===o} onChange={()=>setForm(f=>({...f,sexualHarassment:o}))}/>{o}</label>)}</div></div>
+          <CheckGroup label="Protected Classes Alleged" name="discriminationClasses" options={DISC_CLASSES} form={form} setForm={setForm}/>
+          <Field label="Evidence Supporting Discrimination" name="discriminationEvidence" type="textarea" rows={2} form={form} setForm={setForm} aiField/>
+          <Field label="Oral Comments Showing Animus" name="oralAnimus" type="textarea" rows={2} form={form} setForm={setForm} aiField/>
+          <Field label="Written Statements Showing Animus" name="writtenAnimus" type="textarea" rows={2} form={form} setForm={setForm} aiField/>
+          <Field label="Harassment Details" name="harassmentDetails" type="textarea" rows={2} form={form} setForm={setForm} aiField className="col-span-2"/>
+        </div>
+      </div>
+      <div className="card">
+        <div className="card-header"><div className="card-icon">🏥</div><div><div className="section-heading">Disability & Protected Leave</div></div></div>
+        <div className="field-grid">
+          <div className="field"><label>Disability or Medical Condition?</label><div className="radio-inline">{["Yes","No","Unknown"].map(o=><label key={o}><input type="radio" name="hasDisability" value={o} checked={form.hasDisability===o} onChange={()=>setForm(f=>({...f,hasDisability:o}))}/>{o}</label>)}</div></div>
+          <div className="field"><label>Terminated After Leave?</label><div className="radio-inline">{["Yes","No","N/A"].map(o=><label key={o}><input type="radio" name="terminatedAfterLeave" value={o} checked={form.terminatedAfterLeave===o} onChange={()=>setForm(f=>({...f,terminatedAfterLeave:o}))}/>{o}</label>)}</div></div>
+          <Field label="Nature of Condition" name="disabilityNature" form={form} setForm={setForm} aiField/>
+          <Field label="Date of Onset" name="disabilityDate" type="date" form={form} setForm={setForm} aiField/>
+          <Field label="Accommodation Requested" name="accommodationRequested" form={form} setForm={setForm} aiField/>
+          <Field label="Accommodation Granted?" name="accommodationGranted" type="select" options={["Yes","No","Partially","N/A"]} form={form} setForm={setForm} aiField/>
+          <CheckGroup label="Leave Types" name="leaveTypes" options={LEAVE_TYPES} form={form} setForm={setForm}/>
+          <Field label="Reason for Leave" name="leaveReason" form={form} setForm={setForm} aiField/>
+        </div>
+      </div>
+      <div className="card">
+        <div className="card-header"><div className="card-icon">💰</div><div><div className="section-heading">Wage & Hour</div></div></div>
+        <div className="field-grid">
+          <div className="field"><label>Exempt or Non-Exempt?</label><div className="radio-inline">{["Exempt","Non-exempt","Unknown"].map(o=><label key={o}><input type="radio" name="exemptStatus" value={o} checked={form.exemptStatus===o} onChange={()=>setForm(f=>({...f,exemptStatus:o}))}/>{o}</label>)}</div></div>
+          <div className="field"><label>Hourly or Salaried?</label><div className="radio-inline">{["Hourly","Salaried","Commission"].map(o=><label key={o}><input type="radio" name="hourlyOrSalary" value={o} checked={form.hourlyOrSalary===o} onChange={()=>setForm(f=>({...f,hourlyOrSalary:o}))}/>{o}</label>)}</div></div>
+          <div className="field"><label>Meal & Rest Breaks Provided?</label><div className="radio-inline">{["Yes","No","Sometimes"].map(o=><label key={o}><input type="radio" name="mealRestBreaks" value={o} checked={form.mealRestBreaks===o} onChange={()=>setForm(f=>({...f,mealRestBreaks:o}))}/>{o}</label>)}</div></div>
+          <div className="field"><label>Overtime Paid?</label><div className="radio-inline">{["Yes","No","Unknown"].map(o=><label key={o}><input type="radio" name="overtimePaid" value={o} checked={form.overtimePaid===o} onChange={()=>setForm(f=>({...f,overtimePaid:o}))}/>{o}</label>)}</div></div>
+          <Field label="Meal/Rest Break Details" name="mealRestDetails" type="textarea" rows={2} form={form} setForm={setForm} aiField/>
+          <Field label="Overtime Details" name="overtimeDetails" type="textarea" rows={2} form={form} setForm={setForm} aiField/>
+          <div className="field"><label>Final Paycheck Timely?</label><div className="radio-inline">{["Yes","No","Unknown"].map(o=><label key={o}><input type="radio" name="finalPaycheckTimely" value={o} checked={form.finalPaycheckTimely===o} onChange={()=>setForm(f=>({...f,finalPaycheckTimely:o}))}/>{o}</label>)}</div></div>
+        </div>
+      </div>
+      <div className="card">
+        <div className="card-header"><div className="card-icon">🔍</div><div><div className="section-heading">Witnesses, Evidence & Damages</div></div></div>
+        <div className="field-grid">
+          <Field label="Witness Names & Contact Info" name="witnessNames" type="textarea" rows={3} form={form} setForm={setForm} aiField className="col-span-2"/>
+          <CheckGroup label="Documents in Client Possession" name="evidenceDocs" options={EVIDENCE_DOCS} form={form} setForm={setForm}/>
+          <Field label="Lost Wages" name="lostWages" form={form} setForm={setForm} aiField/>
+          <Field label="Medical Treatment Sought" name="medicalTreatment" form={form} setForm={setForm} aiField/>
+          <Field label="Emotional Distress Symptoms" name="emotionalDistress" type="textarea" rows={2} form={form} setForm={setForm} aiField className="col-span-2"/>
+        </div>
+      </div>
+      <div className="nav-bottom">
+        <button className="btn btn-outline" onClick={onBack}>← Back</button>
+        <button className="btn btn-navy btn-lg" onClick={onNext}>Review & Analyze →</button>
+      </div>
+    </div>
+  );
+}
+
+function Step4({form,setForm,onNext,onBack}){
+  const [analyzing,setAnalyzing]=useState(false);
+  const [error,setError]=useState("");
+  const analyze=async()=>{
+    setAnalyzing(true);setError("");
+    const prompt="You are a senior California employment attorney reviewing this intake for Williams & Seemen, APLC. Analyze and recommend.
+
+CLIENT: "+form.fullName+"
+EMPLOYER: "+form.defendant+"
+JOB: "+form.jobTitle+", "+form.payRate+"
+PERIOD: "+form.startDate+" to "+form.terminationDate+"
+ARBITRATION: "+form.arbitrationAgreement+"
+CLASSES: "+(form.discriminationClasses||[]).join(", ")+"
+DISABILITY: "+form.hasDisability+"
+LEAVE: "+(form.leaveTypes||[]).join(", ")+"
+TERMINATED AFTER LEAVE: "+form.terminatedAfterLeave+"
+BREAKS: "+form.mealRestBreaks+"
+OT PAID: "+form.overtimePaid+"
+EVIDENCE: "+(form.evidenceDocs||[]).join(", ")+"
+NARRATIVE: "+form.terminationClientBelief+"
+
+Return ONLY valid JSON:
+{"verdict":"ACCEPT or DECLINE or NEEDS REVIEW","verdictReason":"one sentence","meritScore":8,"damagesPotential":"High","riskLevel":"Low","solUrgency":"Medium","claimsAnalysis":"2-3 sentences","solNote":"brief SOL note","strengths":["s1","s2"],"concerns":["c1"],"nextSteps":["step1","step2"],"recommendation":"Take case"}";
+    try{
+      const res=await fetch("/api/claude",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({model:"claude-haiku-4-5-20251001",max_tokens:1500,messages:[{role:"user",content:prompt}]})});
+      if(!res.ok){const err=await res.json().catch(()=>({}));throw new Error(err.error?.message||"Server error "+res.status);}
+      const data=await res.json();
+      const raw=data.content.map(c=>c.text||"").join("");
+      const s=raw.indexOf("{");const e2=raw.lastIndexOf("}");
+      const clean=s!==-1&&e2!==-1?raw.slice(s,e2+1):raw;
+      const r=JSON.parse(clean);
+      setForm(f=>({...f,_verdict:r.verdict,_verdictReason:r.verdictReason,_meritScore:r.meritScore,_damagesPotential:r.damagesPotential,_riskLevel:r.riskLevel,_solUrgency:r.solUrgency,_claimsAnalysis:r.claimsAnalysis,_solNote:r.solNote,_strengths:r.strengths||[],_concerns:r.concerns||[],_nextSteps:r.nextSteps||[],credibilityNotes:r.staffNotes||form.credibilityNotes,recommendation:r.recommendation||form.recommendation}));
+    }catch(e){setError("Analysis failed: "+e.message);}
+    setAnalyzing(false);
+  };
+  const sc=(v,type)=>{if(type==="merit")return v>=7?"green-text":v>=5?"amber-text":"red-text";if(type==="dmg")return v==="High"?"green-text":v==="Medium"?"amber-text":"red-text";if(type==="risk")return v==="Low"?"green-text":v==="Medium"?"amber-text":"red-text";return v==="Low"?"green-text":v==="Medium"?"amber-text":"red-text";};
+  const vClass=form._verdict==="ACCEPT"?"verdict-accept":form._verdict==="DECLINE"?"verdict-decline":form._verdict?"verdict-review":"";
+  return(
+    <div>
+      <div className="card">
+        <div className="card-header"><div className="card-icon">🤖</div><div><div className="section-heading">AI Case Analysis</div><div className="section-sub">Let Claude review the full intake and recommend accept / decline</div></div></div>
+        {!form._verdict&&!analyzing&&(<div><div className="alert alert-info" style={{marginBottom:"1rem"}}>Claude will analyze all information and provide a merit score, damages assessment, SOL analysis, and case recommendation.</div><button className="btn btn-navy btn-lg" onClick={analyze}>🔍 Run AI Case Analysis</button></div>)}
+        {analyzing&&<div className="alert alert-info"><span className="spinner" style={{borderTopColor:"#1e40af",borderColor:"#bfdbfe"}}/>&nbsp;Analyzing case details...</div>}
+        {error&&<div className="alert alert-warn">⚠️ {error}</div>}
+        {form._verdict&&!analyzing&&(
+          <div>
+            <div className={"verdict-card "+vClass}>
+              <div className="verdict-title">{form._verdict==="ACCEPT"?"✅":form._verdict==="DECLINE"?"❌":"⚠️"} {form._verdict}</div>
+              <div className="verdict-reason">{form._verdictReason}</div>
+            </div>
+            <div className="score-grid">
+              <div className="score-box"><div className={"score-num "+(sc(form._meritScore,"merit"))}>{form._meritScore}/10</div><div className="score-label">Merit Score</div></div>
+              <div className="score-box"><div className={"score-num "+(sc(form._damagesPotential,"dmg"))}>{form._damagesPotential}</div><div className="score-label">Damages</div></div>
+              <div className="score-box"><div className={"score-num "+(sc(form._riskLevel,"risk"))}>{form._riskLevel}</div><div className="score-label">Risk Level</div></div>
+              <div className="score-box"><div className={"score-num "+(sc(form._solUrgency,"sol"))}>{form._solUrgency}</div><div className="score-label">SOL Urgency</div></div>
+            </div>
+            {form._claimsAnalysis&&<p style={{fontSize:"14px",lineHeight:"1.7",marginBottom:"12px"}}>{form._claimsAnalysis}</p>}
+            {(form._strengths||[]).length>0&&<div style={{marginBottom:"10px"}}><strong style={{fontSize:"13px"}}>✅ Strengths</strong><ul style={{paddingLeft:"18px",fontSize:"13px",lineHeight:"1.8"}}>{form._strengths.map((s,i)=><li key={i}>{s}</li>)}</ul></div>}
+            {(form._concerns||[]).length>0&&<div style={{marginBottom:"10px"}}><strong style={{fontSize:"13px"}}>⚠️ Concerns</strong><ul style={{paddingLeft:"18px",fontSize:"13px",lineHeight:"1.8"}}>{form._concerns.map((c,i)=><li key={i}>{c}</li>)}</ul></div>}
+            {(form._nextSteps||[]).length>0&&<div style={{marginBottom:"10px"}}><strong style={{fontSize:"13px"}}>📋 Next Steps</strong><ul style={{paddingLeft:"18px",fontSize:"13px",lineHeight:"1.8"}}>{form._nextSteps.map((s,i)=><li key={i}>{s}</li>)}</ul></div>}
+            {form._solNote&&<div className="alert alert-warn" style={{marginTop:"10px"}}>⏰ <strong>SOL:</strong> {form._solNote}</div>}
+            <button className="btn btn-outline" style={{marginTop:"12px"}} onClick={analyze}>↻ Re-analyze</button>
+          </div>
+        )}
+      </div>
+      <div className="card">
+        <div className="card-header"><div className="card-icon">📝</div><div><div className="section-heading">Intake Staff Notes</div></div></div>
+        <div className="field-grid">
+          <Field label="Credibility / Demeanor / Inconsistencies" name="credibilityNotes" type="textarea" rows={3} form={form} setForm={setForm} aiField className="col-span-2"/>
+          <Field label="Red Flags (SOL, arbitration, prior claims)" name="redFlags" type="textarea" rows={3} form={form} setForm={setForm} className="col-span-2"/>
+          <Field label="Case Strengths / Corroborating Evidence" name="caseStrengths" type="textarea" rows={3} form={form} setForm={setForm} aiField className="col-span-2"/>
+          <Field label="Action Items / Documents to Collect" name="actionItems" type="textarea" rows={3} form={form} setForm={setForm} aiField className="col-span-2"/>
+          <Field label="Recommendation" name="recommendation" type="select" options={["Take case","Decline","Refer out","Send to attorney for review"]} form={form} setForm={setForm} aiField/>
+        </div>
+      </div>
+      <div className="nav-bottom">
+        <button className="btn btn-outline" onClick={onBack}>← Back</button>
+        <button className="btn btn-navy btn-lg" onClick={onNext}>Generate PDF →</button>
+      </div>
+    </div>
+  );
+}
+
+function Step5({form,onBack}){
+  const [generating,setGenerating]=useState(false);
+  const [done,setDone]=useState(false);
+
+  const generatePDF=async()=>{
+    setGenerating(true);
+    try{
+      const {PDFDocument,rgb,StandardFonts}=PDFLib;
+      const pdfDoc=await PDFDocument.create();
+      const font=await pdfDoc.embedFont(StandardFonts.Helvetica);
+      const fontBold=await pdfDoc.embedFont(StandardFonts.HelveticaBold);
+      const navy=rgb(0.1,0.1,0.24);const red=rgb(0.75,0.22,0.17);const black=rgb(0,0,0);const gray=rgb(0.4,0.4,0.4);
+      const W=612,H=792,M=50;
+
+      const addPage=()=>{
+        const p=pdfDoc.addPage([W,H]);
+        p.drawRectangle({x:0,y:H-60,width:W,height:60,color:navy});
+        p.drawText("WILLIAMS & SEEMEN, APLC",{x:M,y:H-28,size:13,font:fontBold,color:rgb(1,1,1)});
+        p.drawText("Employment Law Intake Questionnaire — Confidential & Privileged",{x:M,y:H-45,size:8,font,color:rgb(0.8,0.8,0.8)});
+        p.drawLine({start:{x:M,y:30},end:{x:W-M,y:30},thickness:0.5,color:gray});
+        p.drawText("Williams & Seemen, APLC  |  16255 Ventura Blvd., Suite 1106, Encino, CA 91436  |  (818) 898-3300",{x:M,y:18,size:7,font,color:gray});
+        return p;
+      };
+
+      const safe=v=>String(v||"").replace(/[^ -~]/g," ").slice(0,200);
+
+      const field=(p,label,value,x,y,w=240)=>{
+        p.drawText(label+":",{x,y,size:7.5,font:fontBold,color:gray});
+        p.drawLine({start:{x,y:y-3},end:{x:x+w,y:y-3},thickness:0.3,color:rgb(0.8,0.8,0.8)});
+        if(value)p.drawText(safe(value),{x,y:y-13,size:9,font,color:black});
+        return y-30;
+      };
+
+      const section=(p,title,y)=>{
+        p.drawRectangle({x:M-5,y:y-4,width:W-2*M+10,height:18,color:navy});
+        p.drawText(title.toUpperCase(),{x:M,y:y+1,size:9,font:fontBold,color:rgb(1,1,1)});
+        return y-24;
+      };
+
+      const wrap=(p,label,value,x,y)=>{
+        p.drawText(label+":",{x,y,size:7.5,font:fontBold,color:gray});
+        y-=14;
+        if(!value)return y-4;
+        const words=safe(value).split(" ");let line="",lines=[];
+        for(const w2 of words){if((line+" "+w2).length>85){lines.push(line);line=w2;}else line=line?line+" "+w2:w2;}
+        if(line)lines.push(line);
+        for(const l of lines.slice(0,6)){p.drawText(l,{x,y,size:9,font,color:black});y-=13;}
+        return y-4;
+      };
+
+      let p=addPage();let y=H-80;
+      p.drawText("INTAKE DATE: "+safe(form.intakeDate||new Date().toLocaleDateString()),{x:M,y,size:9,font,color:black});
+      p.drawText("METHOD: "+safe(form.intakeMethod),{x:250,y,size:9,font,color:black});
+      p.drawText("STAFF: "+safe(form.intakeStaff),{x:420,y,size:9,font,color:black});
+      y-=20;
+      y=section(p,"Prospective New Client Contact Information",y);y-=8;
+      y=field(p,"Full Legal Name",form.fullName,M,y);
+      y=field(p,"Date of Birth",form.dob,M,y);
+      y=field(p,"Primary Phone",form.primaryPhone,M,y);
+      y=field(p,"Email Address",form.email,M,y);
+      y=field(p,"Alternate Phone",form.altPhone,M,y);
+      y=wrap(p,"Mailing Address",form.address,M,y);
+      y=field(p,"Best Time to Contact",form.bestContact,M,y);
+      y=field(p,"Prior Attorney",form.priorAttorney||form.priorAttorneyYN,M,y);
+      y-=10;
+
+      p=addPage();y=H-80;
+      y=section(p,"Employment Status with Defendant",y);y-=8;
+      y=wrap(p,"Defendant / Employer",form.defendant,M,y);
+      y=field(p,"Job Title",form.jobTitle,M,y);
+      y=field(p,"Pay Rate",form.payRate,M,y);
+      y=field(p,"Employment Type",form.atWillOrContract,M,y);
+      y=field(p,"Start Date",form.startDate,M,y);
+      y=field(p,"Termination Date",form.terminationDate,M,y);
+      y=wrap(p,"Last Supervisor",form.supervisor,M,y);
+      y=field(p,"Employment Status",form.employmentStatus,M,y);
+      y=field(p,"Arbitration Agreement",form.arbitrationAgreement,M,y);
+      y=field(p,"Union Member",form.unionMember,M,y);
+      y=field(p,"Severance Offered",form.severanceOffered,M,y);
+      y-=10;
+      y=wrap(p,"Employer Stated Reason",form.terminationEmployerReason,M,y);
+      y=wrap(p,"Client Belief as to Actual Reason",form.terminationClientBelief,M,y);
+
+      p=addPage();y=H-80;
+      y=section(p,"Basis of Case",y);y-=8;
+      y=field(p,"Discrimination Alleged?",form.discriminationBelief,M,y);
+      y=wrap(p,"Protected Classes",(form.discriminationClasses||[]).join(", "),M,y);
+      y=wrap(p,"Evidence",form.discriminationEvidence,M,y);
+      y=wrap(p,"Oral Animus",form.oralAnimus,M,y);
+      y=wrap(p,"Written Animus",form.writtenAnimus,M,y);
+      y-=10;
+      y=section(p,"Disability & Leave",y);y-=8;
+      y=field(p,"Disability?",form.hasDisability,M,y);
+      y=wrap(p,"Nature of Condition",form.disabilityNature,M,y);
+      y=wrap(p,"Leave Types",(form.leaveTypes||[]).join(", "),M,y);
+      y=field(p,"Terminated After Leave?",form.terminatedAfterLeave,M,y);
+      y-=10;
+      y=section(p,"Wage & Hour",y);y-=8;
+      y=field(p,"Exempt Status",form.exemptStatus,M,y);
+      y=field(p,"Meal & Rest Breaks",form.mealRestBreaks,M,y);
+      y=wrap(p,"Break Details",form.mealRestDetails,M,y);
+      y=field(p,"Overtime Paid?",form.overtimePaid,M,y);
+
+      p=addPage();y=H-80;
+      y=section(p,"Witnesses & Evidence",y);y-=8;
+      y=wrap(p,"Witnesses",form.witnessNames,M,y);
+      y=wrap(p,"Documents",(form.evidenceDocs||[]).join(", "),M,y);
+      y-=10;
+      y=section(p,"Intake Staff Notes & AI Analysis",y);y-=8;
+      y=wrap(p,"Credibility / Demeanor",form.credibilityNotes,M,y);
+      y=wrap(p,"Red Flags",form.redFlags,M,y);
+      y=wrap(p,"Case Strengths",form.caseStrengths,M,y);
+      y=wrap(p,"Action Items",form.actionItems,M,y);
+      y-=10;
+
+      if(form.recommendation){
+        const recText="RECOMMENDATION: "+safe(form.recommendation);
+        const recWords=recText.split(" ");const recLines=[];let recLine="";
+        for(const w2 of recWords){if((recLine+" "+w2).length>72){recLines.push(recLine);recLine=w2;}else recLine=recLine?recLine+" "+w2:w2;}
+        if(recLine)recLines.push(recLine);
+        const recH=recLines.length*15+20;
+        if(y-recH>40){
+          p.drawRectangle({x:M-5,y:y-recH+10,width:W-2*M+10,height:recH,color:rgb(0.86,0.97,0.88)});
+          let recY=y-4;
+          for(const l of recLines){p.drawText(l,{x:M+5,y:recY,size:9,font:fontBold,color:rgb(0.06,0.4,0.2)});recY-=15;}
+          y=recY-10;
+        }
+      }
+
+      if(form._verdict){
+        const vColor=form._verdict==="ACCEPT"?rgb(0.06,0.4,0.2):form._verdict==="DECLINE"?rgb(0.75,0.1,0.1):rgb(0.5,0.3,0);
+        if(y>60)p.drawText("AI: "+form._verdict+" — "+safe(form._verdictReason),{x:M,y:y>60?y:60,size:9,font:fontBold,color:vColor});
+      }
+
+      p.drawText("Generated: "+new Date().toLocaleString(),{x:M,y:50,size:7,font,color:gray});
+      p.drawText("CONFIDENTIAL & PRIVILEGED — ATTORNEY WORK PRODUCT",{x:M,y:38,size:7,font:fontBold,color:red});
+
+      const pdfBytes=await pdfDoc.save();
+      const blob=new Blob([pdfBytes],{type:"application/pdf"});
+      const url=URL.createObjectURL(blob);
+      const a=document.createElement("a");a.href=url;
+      a.download="Intake_"+(form.fullName||"Client").replace(/\s+/g,"_")+"_"+new Date().toISOString().split("T")[0]+".pdf";
+      a.click();URL.revokeObjectURL(url);
+      setDone(true);
+    }catch(e){alert("PDF error: "+e.message);}
+    setGenerating(false);
+  };
+
+  const downloadJSON=()=>{
+    const clean=Object.fromEntries(Object.entries(form).filter(([k])=>!k.startsWith("_")));
+    const b=new Blob([JSON.stringify(clean,null,2)],{type:"application/json"});
+    const a=document.createElement("a");a.href=URL.createObjectURL(b);
+    a.download="Intake_"+(form.fullName||"Client").replace(/\s+/g,"_")+".json";a.click();
+  };
+
+  const fields=[["Client Name",form.fullName],["Phone",form.primaryPhone],["Email",form.email],["Employer",form.defendant],["Job Title",form.jobTitle],["Pay",form.payRate],["Start Date",form.startDate],["End Date",form.terminationDate],["Arbitration",form.arbitrationAgreement],["Recommendation",form.recommendation]].filter(([,v])=>v);
+
+  return(
+    <div>
+      <div className="card">
+        <div className="card-header"><div className="card-icon">✅</div><div><div className="section-heading">Intake Complete — Ready to Download</div></div></div>
+        <div className="summary-grid">{fields.map(([l,v])=><div key={l} className="summary-item"><span className="summary-label">{l}</span><span className="summary-value">{v}</span></div>)}</div>
+        {form._verdict&&(
+          <div className={"verdict-card "+(form._verdict==="ACCEPT"?"verdict-accept":form._verdict==="DECLINE"?"verdict-decline":"verdict-review")} style={{marginBottom:"1.5rem"}}>
+            <div style={{fontSize:"15px",fontWeight:700}}>{form._verdict==="ACCEPT"?"✅":form._verdict==="DECLINE"?"❌":"⚠️"} AI Recommendation: {form.recommendation||form._verdict}</div>
+            <div style={{fontSize:"13px",marginTop:"4px"}}>{form._verdictReason}</div>
+          </div>
+        )}
+        {done&&<div className="alert alert-success">✅ PDF downloaded successfully!</div>}
+        <div style={{display:"flex",gap:"12px",flexWrap:"wrap"}}>
+          <button className="btn btn-navy btn-lg" onClick={generatePDF} disabled={generating}>
+            {generating?<><span className="spinner"/>&nbsp;Generating PDF...</>:"⬇️ Download filled PDF"}
+          </button>
+          <button className="btn btn-outline" onClick={downloadJSON}>📄 Export as JSON</button>
+        </div>
+      </div>
+      <div className="nav-bottom">
+        <button className="btn btn-outline" onClick={onBack}>← Back to edit</button>
+        <button className="btn btn-green btn-lg" onClick={()=>window.location.reload()}>＋ New Intake</button>
+      </div>
+    </div>
+  );
+}
+
+function App(){
+  const [step,setStep]=useState(1);
+  const [form,setForm]=useState({...EMPTY_FORM});
+  const handleExtracted=data=>{setForm(data);setStep(2);};
+  return(
+    <div>
+      <div className="topbar">
+        <div className="topbar-brand">
+          <div className="topbar-logo">W&S<br/>APLC</div>
+          <div><div className="topbar-title">Williams &amp; Seemen, APLC</div><div className="topbar-sub">Employment Law Intake System</div></div>
+        </div>
+        <div style={{display:"flex",alignItems:"center",gap:"8px"}}>
+          {form.fullName&&<span className="badge badge-purple">👤 {form.fullName}</span>}
+          <span style={{fontSize:"12px",color:"rgba(255,255,255,0.6)"}}>Confidential &amp; Privileged</span>
+        </div>
+      </div>
+      <div className="main">
+        <StepBar step={step}/>
+        {step===1&&<Step1 onExtracted={handleExtracted}/>}
+        {step===2&&<Step2 form={form} setForm={setForm} onNext={()=>setStep(3)} onBack={()=>setStep(1)}/>}
+        {step===3&&<Step3 form={form} setForm={setForm} onNext={()=>setStep(4)} onBack={()=>setStep(2)}/>}
+        {step===4&&<Step4 form={form} setForm={setForm} onNext={()=>setStep(5)} onBack={()=>setStep(3)}/>}
+        {step===5&&<Step5 form={form} onBack={()=>setStep(4)}/>}
+      </div>
+    </div>
+  );
+}
+
+ReactDOM.createRoot(document.getElementById("root")).render(<App/>);
+</script>
+</body>
+</html>
