@@ -317,7 +317,21 @@ function S4({f,sf,nx,bk}){
       if(!res.ok){const e=await res.json().catch(()=>({}));throw new Error(e.error?.message||"Error");}
       const d=await res.json();
       const r=pj(d.content.map(c=>c.text||"").join(""));
-      sf(x=>({...x,_verdict:r.verdict,_verdictReason:r.verdictReason,_meritScore:r.meritScore,_damagesPotential:r.damagesPotential,_riskLevel:r.riskLevel,_solUrgency:r.solUrgency,_claimsAnalysis:r.claimsAnalysis,_solNote:r.solNote,_strengths:r.strengths||[],_concerns:r.concerns||[],_nextSteps:r.nextSteps||[],recommendation:r.recommendation||""}));
+      const toA=v=>Array.isArray(v)?v:(typeof v==="string"&&v?[v]:[]);
+      sf(x=>({...x,
+        _verdict:String(r.verdict||"NEEDS REVIEW"),
+        _verdictReason:String(r.verdictReason||""),
+        _meritScore:Number(r.meritScore||5),
+        _damagesPotential:String(r.damagesPotential||"Medium"),
+        _riskLevel:String(r.riskLevel||"Medium"),
+        _solUrgency:String(r.solUrgency||"Medium"),
+        _claimsAnalysis:String(r.claimsAnalysis||""),
+        _solNote:String(r.solNote||""),
+        _strengths:toA(r.strengths),
+        _concerns:toA(r.concerns),
+        _nextSteps:toA(r.nextSteps),
+        recommendation:String(r.recommendation||"")
+      }));
     }catch(e){setEr("Analysis failed: "+e.message);}
     setBusy(false);
   };
