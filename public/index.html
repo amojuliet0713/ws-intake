@@ -316,7 +316,7 @@ Return ONLY valid JSON (no markdown, no backticks). Map to these exact keys:
       const res = await fetch("/api/claude", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ model:"claude-sonnet-4-20250514", max_tokens:2000, messages:[{role:"user", content:prompt}] })
+        body: JSON.stringify({ model:"claude-sonnet-4-5", max_tokens:2000, messages:[{role:"user", content:prompt}] })
       });
       if (!res.ok) {
         const err = await res.json().catch(()=>({}));
@@ -610,7 +610,7 @@ Respond ONLY with valid JSON (no markdown, no backticks):
       const res = await fetch("/api/claude", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({model:"claude-sonnet-4-20250514", max_tokens:1500, messages:[{role:"user",content:prompt}]})
+        body: JSON.stringify({model:"claude-sonnet-4-5", max_tokens:1500, messages:[{role:"user",content:prompt}]})
       });
       if (!res.ok) {
         const err = await res.json().catch(()=>({}));
