@@ -653,27 +653,15 @@ Return ONLY valid JSON (no markdown, no backticks). Map to these exact keys:
       const data = await res.json();
       const raw = data.content.map(c => c.text||"").join("");
       let clean = raw.replace(/```json|```/g,"").trim();
-      // Fix common JSON issues: smart quotes, unterminated strings
-      clean = clean
-        .replace(/[‘’]/g, "\'")
-        .replace(/[“”]/g, '\"')
-        .replace(/[–—]/g, "-")
-        .replace(/
-/g, " ")
-        .replace(/
-/g, " ");
-      // Find the JSON object boundaries
       const jsonStart = clean.indexOf("{");
       const jsonEnd = clean.lastIndexOf("}");
-      if (jsonStart !== -1 && jsonEnd !== -1) {
-        clean = clean.slice(jsonStart, jsonEnd + 1);
-      }
+      if (jsonStart !== -1 && jsonEnd !== -1) clean = clean.slice(jsonStart, jsonEnd + 1);
       let extracted;
       try {
         extracted = JSON.parse(clean);
       } catch(parseErr) {
         // Try to extract key fields with regex as fallback
-        const getField = (key) => {
+          const m = clean.match(new RegExp('"' + key + '"\\s*:\\s*"([^"]*)"')); 
           const m = clean.match(new RegExp('"' + key + '"\s*:\s*"([^"]*)"'));
           return m ? m[1] : "";
         };
