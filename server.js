@@ -1,4 +1,4 @@
-require("dotenv").config();
+// env vars injected by Railway directly
 const express = require("express");
 const cors = require("cors");
 const multer = require("multer");
@@ -52,18 +52,40 @@ app.post("/api/extract-text", upload.single("file"), async (req, res) => {
       return res.json({ text: req.file.buffer.toString("utf8") });
     }
     if (ext === "pdf") {
-      const PDFParser = require("pdf2json");
-      const text = await new Promise((resolve, reject) => {
-        const parser = new PDFParser();
-        parser.on("pdfParser_dataReady", data => {
-          const text = data.Pages.map(p =>
-            p.Texts.map(t => decodeURIComponent(t.R.map(r => r.T).join(""))).join(" ")
-          ).join("\n");
-          resolve(text);
-        });
-        parser.on("pdfParser_dataError", reject);
-        parser.parseBuffer(req.file.buffer);
+      // Use Claude to read the PDF natively - most accurate extraction
+      const ANTHROPIC_API_KEY = process.env.ANTHROPIC_API_KEY;
+      if (!ANTHROPIC_API_KEY || ANTHROPIC_API_KEY.includes("PASTE-YOUR-KEY")) {
+        return res.status(500).json({ error: "API key not configured on server." });
+      }
+      const base64pdf = req.file.buffer.toString("base64");
+      const response = await fetch("https://api.anthropic.com/v1/messages", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "x-api-key": ANTHROPIC_API_KEY,
+          "anthropic-version": "2023-06-01",
+        },
+        body: JSON.stringify({
+          model: "claude-sonnet-4-20250514",
+          max_tokens: 4000,
+          messages: [{
+            role: "user",
+            content: [
+              {
+                type: "document",
+                source: { type: "base64", media_type: "application/pdf", data: base64pdf }
+              },
+              {
+                type: "text",
+                text: "Extract ALL text from this document. Return the complete text content only, preserving the structure. Include every field, label, and value you can see."
+              }
+            ]
+          }]
+        })
       });
+      const data = await response.json();
+      if (!response.ok) return res.status(response.status).json({ error: data.error?.message || "Claude API error" });
+      const text = data.content.map(c => c.text || "").join("");
       return res.json({ text });
     }
     if (ext === "docx") {
