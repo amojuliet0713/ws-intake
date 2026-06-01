@@ -378,8 +378,21 @@ function S4({f,sf,nx,bk}){
 function S5({f,bk}){
   const [busy,setBusy]=useState(false);
   const [done,setDone]=useState(false);
-  const sa=v=>String(v||"").replace(/[^\x20-\x7E]/g," ").slice(0,200);
-    const toArr=v=>Array.isArray(v)?v:(typeof v==="string"&&v?v.split(","):[]);
+  const sa=v=>String(v||"").replace(/[^\x20-\x7E]/g," ").slice(0,400);
+  const toArr=v=>Array.isArray(v)?v:(typeof v==="string"&&v?v.split(","):[]);
+
+  const wrapText=(text,maxChars)=>{
+    const words=String(text||"").split(" ");
+    let line="",lines=[];
+    for(const w of words){
+      const test=line?line+" "+w:w;
+      if(test.length>maxChars){if(line)lines.push(line);line=w;}
+      else line=test;
+    }
+    if(line)lines.push(line);
+    return lines;
+  };
+
   const gen=async()=>{
     setBusy(true);
     try{
@@ -400,7 +413,13 @@ function S5({f,bk}){
       };
       const sec=(p,t,y)=>{p.drawRectangle({x:M-5,y:y-4,width:W-2*M+10,height:18,color:nv});p.drawText(t.toUpperCase(),{x:M,y:y+1,size:9,font:fb,color:rgb(1,1,1)});return y-24;};
       const fld=(p,l,v,x,y)=>{p.drawText(l+":",{x,y,size:7.5,font:fb,color:gy});p.drawLine({start:{x,y:y-3},end:{x:x+240,y:y-3},thickness:.3,color:rgb(.8,.8,.8)});if(v)p.drawText(sa(v),{x,y:y-13,size:9,font:fn2,color:bk2});return y-30;};
-      const blk=(p,l,v,x,y)=>{p.drawText(l+":",{x,y,size:7.5,font:fb,color:gy});y-=14;if(!v)return y-4;const ws=sa(v).split(" ");let ln2="",ls=[];for(const w of ws){if((ln2+" "+w).length>85){ls.push(ln2);ln2=w;}else ln2=ln2?ln2+" "+w:w;}if(ln2)ls.push(ln2);for(const l2 of ls.slice(0,6)){p.drawText(l2,{x,y,size:9,font:fn2,color:bk2});y-=13;}return y-4;};
+      const blk=(p,l,v,x,y)=>{
+        p.drawText(l+":",{x,y,size:7.5,font:fb,color:gy});y-=14;
+        if(!v)return y-4;
+        const lines=wrapText(sa(v),85);
+        for(const ln of lines.slice(0,6)){p.drawText(ln,{x,y,size:9,font:fn2,color:bk2});y-=13;}
+        return y-4;
+      };
       let p=pg(),y=H-80;
       p.drawText("Date: "+sa(f.intakeDate||new Date().toLocaleDateString()),{x:M,y,size:9,font:fn2,color:bk2});
       p.drawText("Staff: "+sa(f.intakeStaff),{x:300,y,size:9,font:fn2,color:bk2});y-=20;
@@ -416,26 +435,37 @@ function S5({f,bk}){
       y=fld(p,"Breaks",f.mealRestBreaks,M,y);y=blk(p,"Break Details",f.mealRestDetails,M,y);y=fld(p,"OT Paid",f.overtimePaid,M,y);y-=10;
       y=sec(p,"Evidence & Notes",y);y-=8;
       y=blk(p,"Witnesses",f.witnessNames,M,y);y=blk(p,"Documents",toArr(f.evidenceDocs).join(", "),M,y);y=blk(p,"Strengths",f.caseStrengths,M,y);y=blk(p,"Action Items",f.actionItems,M,y);y-=10;
+
       if(f.recommendation){
-        const recWords=sa(f.recommendation).split(' ');let recLine='',recLines=[];
-        for(const w of recWords){if(('RECOMMENDATION: '+recLine+' '+w).length>75){recLines.push(recLine);recLine=w;}else recLine=recLine?recLine+' '+w:w;}
-        if(recLine)recLines.push(recLine);
-        const recH=recLines.length*16+20;
+        const recLabel="RECOMMENDATION: ";
+        const recBody=sa(f.recommendation);
+        const firstLineFull=recLabel+recBody;
+        let recLines=[];
+        if(firstLineFull.length>72){
+          recLines.push(recLabel.trim());
+          recLines=recLines.concat(wrapText(recBody,68));
+        } else {
+          recLines=wrapText(firstLineFull,72);
+        }
+        const recH=recLines.length*14+20;
         p.drawRectangle({x:M-5,y:y-recH+8,width:W-2*M+10,height:recH,color:rgb(.86,.97,.88)});
         let recY=y-4;
-        p.drawText('RECOMMENDATION:',{x:M,y:recY,size:9,font:fb,color:rgb(.06,.4,.2)});recY-=14;
-        for(const l of recLines){p.drawText(l,{x:M+10,y:recY,size:9,font:fb,color:rgb(.06,.4,.2)});recY-=13;}
+        for(const l of recLines){p.drawText(l,{x:M,y:recY,size:9,font:fb,color:rgb(.06,.4,.2)});recY-=14;}
         y=recY-8;
       }
+
       if(f._verdict){
-        const vc2=f._verdict==='ACCEPT'?rgb(.06,.4,.2):f._verdict==='DECLINE'?rgb(.75,.1,.1):rgb(.5,.3,0);
-        const aiWords=('AI VERDICT: '+f._verdict+' - '+sa(f._verdictReason)).split(' ');
-        let aiLine='',aiLines=[];
-        for(const w of aiWords){if((aiLine+' '+w).length>80){aiLines.push(aiLine);aiLine=w;}else aiLine=aiLine?aiLine+' '+w:w;}
-        if(aiLine)aiLines.push(aiLine);
-        let aiY=Math.max(y,80);
-        for(const l of aiLines.slice(0,5)){p.drawText(l,{x:M,y:aiY,size:9,font:fb,color:vc2});aiY-=13;}
+        const vc2=f._verdict==="ACCEPT"?rgb(.06,.4,.2):f._verdict==="DECLINE"?rgb(.75,.1,.1):rgb(.5,.3,0);
+        const aiBody=sa(f._verdictReason||"");
+        const aiFullText="AI: "+f._verdict+(aiBody?" - "+aiBody:"");
+        const aiLines=wrapText(aiFullText,72);
+        const aiH=aiLines.length*14+16;
+        const aiTopY=Math.max(y-4,100);
+        p.drawRectangle({x:M-5,y:aiTopY-aiLines.length*14-4,width:W-2*M+10,height:aiH,color:rgb(.99,.97,.93)});
+        let aiY=aiTopY;
+        for(const l of aiLines.slice(0,8)){p.drawText(l,{x:M,y:aiY,size:9,font:fb,color:vc2});aiY-=14;}
       }
+
       p.drawText("Generated: "+new Date().toLocaleString(),{x:M,y:50,size:7,font:fn2,color:gy});
       p.drawText("CONFIDENTIAL & PRIVILEGED - ATTORNEY WORK PRODUCT",{x:M,y:38,size:7,font:fb,color:rd});
       const bytes=await doc.save();
