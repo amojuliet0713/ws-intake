@@ -307,6 +307,7 @@ function S3({f,sf,nx,bk}){
 function S4({f,sf,nx,bk}){
   const [busy,setBusy]=useState(false);
   const [er,setEr]=useState("");
+  const [autoRan,setAutoRan]=useState(false);
   const go=async()=>{
     setBusy(true);setEr("");
     try{
@@ -320,6 +321,7 @@ function S4({f,sf,nx,bk}){
     }catch(e){setEr("Analysis failed: "+e.message);}
     setBusy(false);
   };
+  React.useEffect(()=>{if(!f._verdict&&!autoRan){setAutoRan(true);go();}},[]);
   const sc=(v,t)=>t==="m"?v>=7?"gt":v>=5?"at":"rt":t==="d"?v==="High"?"gt":v==="Medium"?"at":"rt":v==="Low"?"gt":v==="Medium"?"at":"rt";
   const vc=f._verdict==="ACCEPT"?"va":f._verdict==="DECLINE"?"vd":f._verdict?"vr":"";
   return(
