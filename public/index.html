@@ -190,13 +190,13 @@ function Step1({onExtracted}){
     setLoading(true);setError("");
     try{
       const today=new Date().toISOString().split("T")[0];
-      const prompt="You are an expert legal intake analyst for a California employment law firm. Extract ALL available information from this intake document into structured JSON. Be thorough.
+      const prompt=`You are an expert legal intake analyst for a California employment law firm. Extract ALL available information from this intake document into structured JSON. Be thorough.
 
 INTAKE DOCUMENT:
-"+text.slice(0,12000)+"
+${text.slice(0,12000)}
 
-Return ONLY valid JSON with these exact keys:
-{"fullName":"","preferredName":"","dob":"","address":"","primaryPhone":"","altPhone":"","email":"","bestContact":"","preferredLanguage":"","emergencyContact":"","priorAttorney":"","priorAttorneyYN":"","defendant":"","isGovtEmployer":"","jobTitle":"","payRate":"","atWillOrContract":"At-Will","startDate":"","endDate":"","supervisor":"","employmentStatus":"Terminated","terminationDate":"","terminationEmployerReason":"","terminationClientBelief":"","severanceOffered":"No","arbitrationAgreement":"","unionMember":"No","discriminationBelief":"","discriminationClasses":[],"discriminationEvidence":"","oralAnimus":"","writtenAnimus":"","sexualHarassment":"No","protectedClassHarassment":"","harassmentDetails":"","hasDisability":"","disabilityNature":"","disabilityDate":"","accommodationRequested":"","accommodationGranted":"","adverseActionDisability":"","leaveTypes":[],"leaveReason":"","leaveGranted":"","terminatedAfterLeave":"","exemptStatus":"Non-exempt","hourlyOrSalary":"Hourly","mealRestBreaks":"","mealRestDetails":"","overtimePaid":"","overtimeDetails":"","finalPaycheckTimely":"","tipsIssues":"","lostWages":"","lostBenefits":"","postTermEarnings":"","medicalTreatment":"","emotionalDistress":"","witnessNames":"","evidenceDocs":[],"audioRecordings":"","socialMedia":"","credibilityNotes":"","redFlags":"","caseStrengths":"","actionItems":"","recommendation":"","intakeDate":""+today+"","intakeMethod":"","intakeStaff":"","referralSource":"","attorneyAssigned":"","followUpDate":""}";
+Return ONLY valid JSON (no markdown, no backticks) with these exact keys:
+{"fullName":"","preferredName":"","dob":"","address":"","primaryPhone":"","altPhone":"","email":"","bestContact":"","preferredLanguage":"","emergencyContact":"","priorAttorney":"","priorAttorneyYN":"","defendant":"","isGovtEmployer":"","jobTitle":"","payRate":"","atWillOrContract":"At-Will","startDate":"","endDate":"","supervisor":"","employmentStatus":"Terminated","terminationDate":"","terminationEmployerReason":"","terminationClientBelief":"","severanceOffered":"No","arbitrationAgreement":"","unionMember":"No","discriminationBelief":"","discriminationClasses":[],"discriminationEvidence":"","oralAnimus":"","writtenAnimus":"","sexualHarassment":"No","protectedClassHarassment":"","harassmentDetails":"","hasDisability":"","disabilityNature":"","disabilityDate":"","accommodationRequested":"","accommodationGranted":"","adverseActionDisability":"","leaveTypes":[],"leaveReason":"","leaveGranted":"","terminatedAfterLeave":"","exemptStatus":"Non-exempt","hourlyOrSalary":"Hourly","mealRestBreaks":"","mealRestDetails":"","overtimePaid":"","overtimeDetails":"","finalPaycheckTimely":"","tipsIssues":"","lostWages":"","lostBenefits":"","postTermEarnings":"","medicalTreatment":"","emotionalDistress":"","witnessNames":"","evidenceDocs":[],"audioRecordings":"","socialMedia":"","credibilityNotes":"","redFlags":"","caseStrengths":"","actionItems":"","recommendation":"","intakeDate":"${today}","intakeMethod":"","intakeStaff":"","referralSource":"","attorneyAssigned":"","followUpDate":""}`;
       const res=await fetch("/api/claude",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({model:"claude-haiku-4-5-20251001",max_tokens:2000,messages:[{role:"user",content:prompt}]})});
       if(!res.ok){const err=await res.json().catch(()=>({}));throw new Error(err.error?.message||err.error||"Server error "+res.status);}
       const data=await res.json();
@@ -360,24 +360,24 @@ function Step4({form,setForm,onNext,onBack}){
   const [error,setError]=useState("");
   const analyze=async()=>{
     setAnalyzing(true);setError("");
-    const prompt="You are a senior California employment attorney reviewing this intake for Williams & Seemen, APLC. Analyze and recommend.
+    const prompt=`You are a senior California employment attorney reviewing this intake for Williams & Seemen, APLC. Analyze and recommend.
 
-CLIENT: "+form.fullName+"
-EMPLOYER: "+form.defendant+"
-JOB: "+form.jobTitle+", "+form.payRate+"
-PERIOD: "+form.startDate+" to "+form.terminationDate+"
-ARBITRATION: "+form.arbitrationAgreement+"
-CLASSES: "+(form.discriminationClasses||[]).join(", ")+"
-DISABILITY: "+form.hasDisability+"
-LEAVE: "+(form.leaveTypes||[]).join(", ")+"
-TERMINATED AFTER LEAVE: "+form.terminatedAfterLeave+"
-BREAKS: "+form.mealRestBreaks+"
-OT PAID: "+form.overtimePaid+"
-EVIDENCE: "+(form.evidenceDocs||[]).join(", ")+"
-NARRATIVE: "+form.terminationClientBelief+"
+CLIENT: ${form.fullName}
+EMPLOYER: ${form.defendant}
+JOB: ${form.jobTitle}, ${form.payRate}
+PERIOD: ${form.startDate} to ${form.terminationDate}
+ARBITRATION: ${form.arbitrationAgreement}
+CLASSES: ${(form.discriminationClasses||[]).join(", ")}
+DISABILITY: ${form.hasDisability}
+LEAVE: ${(form.leaveTypes||[]).join(", ")}
+TERMINATED AFTER LEAVE: ${form.terminatedAfterLeave}
+BREAKS: ${form.mealRestBreaks}
+OT PAID: ${form.overtimePaid}
+EVIDENCE: ${(form.evidenceDocs||[]).join(", ")}
+NARRATIVE: ${form.terminationClientBelief}
 
-Return ONLY valid JSON:
-{"verdict":"ACCEPT or DECLINE or NEEDS REVIEW","verdictReason":"one sentence","meritScore":8,"damagesPotential":"High","riskLevel":"Low","solUrgency":"Medium","claimsAnalysis":"2-3 sentences","solNote":"brief SOL note","strengths":["s1","s2"],"concerns":["c1"],"nextSteps":["step1","step2"],"recommendation":"Take case"}";
+Return ONLY valid JSON (no markdown):
+{"verdict":"ACCEPT or DECLINE or NEEDS REVIEW","verdictReason":"one sentence","meritScore":8,"damagesPotential":"High","riskLevel":"Low","solUrgency":"Medium","claimsAnalysis":"2-3 sentences","solNote":"brief SOL note","strengths":["s1","s2"],"concerns":["c1"],"nextSteps":["step1","step2"],"recommendation":"Take case"}`;
     try{
       const res=await fetch("/api/claude",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({model:"claude-haiku-4-5-20251001",max_tokens:1500,messages:[{role:"user",content:prompt}]})});
       if(!res.ok){const err=await res.json().catch(()=>({}));throw new Error(err.error?.message||"Server error "+res.status);}
