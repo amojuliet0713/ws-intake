@@ -324,8 +324,41 @@ Return ONLY valid JSON (no markdown, no backticks). Map to these exact keys:
       }
       const data = await res.json();
       const raw = data.content.map(c => c.text||"").join("");
-      const clean = raw.replace(/```json|```/g,"").trim();
-      const extracted = JSON.parse(clean);
+      let clean = raw.replace(/```json|```/g,"").trim();
+      // Fix common JSON issues: smart quotes, unterminated strings
+      clean = clean
+        .replace(/[‘’]/g, "\'")
+        .replace(/[“”]/g, '\"')
+        .replace(/[–—]/g, "-")
+        .replace(/
+/g, " ")
+        .replace(/
+/g, " ");
+      // Find the JSON object boundaries
+      const jsonStart = clean.indexOf("{");
+      const jsonEnd = clean.lastIndexOf("}");
+      if (jsonStart !== -1 && jsonEnd !== -1) {
+        clean = clean.slice(jsonStart, jsonEnd + 1);
+      }
+      let extracted;
+      try {
+        extracted = JSON.parse(clean);
+      } catch(parseErr) {
+        // Try to extract key fields with regex as fallback
+        const getField = (key) => {
+          const m = clean.match(new RegExp('"' + key + '"\s*:\s*"([^"]*)"'));
+          return m ? m[1] : "";
+        };
+        extracted = {
+          fullName: getField("fullName"), primaryPhone: getField("primaryPhone"),
+          email: getField("email"), defendant: getField("defendant"),
+          jobTitle: getField("jobTitle"), payRate: getField("payRate"),
+          startDate: getField("startDate"), terminationDate: getField("terminationDate"),
+          terminationClientBelief: getField("terminationClientBelief"),
+          terminationEmployerReason: getField("terminationEmployerReason"),
+          intakeDate: new Date().toISOString().split("T")[0]
+        };
+      }
       onExtracted({...EMPTY_FORM, ...extracted});
     } catch(e) {
       setError("Extraction failed: " + e.message);
@@ -618,7 +651,13 @@ Respond ONLY with valid JSON (no markdown, no backticks):
       }
       const data = await res.json();
       const raw = data.content.map(c=>c.text||"").join("");
-      const clean = raw.replace(/```json|```/g,"").trim();
+      let clean = raw.replace(/```json|```/g,"").trim()
+        .replace(/[‘’]/g, "\'")
+        .replace(/[“”]/g, '\"')
+        .replace(/[–—]/g, "-");
+      const jsonStart = clean.indexOf("{");
+      const jsonEnd = clean.lastIndexOf("}");
+      if (jsonStart !== -1 && jsonEnd !== -1) clean = clean.slice(jsonStart, jsonEnd + 1);
       const r = JSON.parse(clean);
       setForm(f => ({...f,
         _verdict: r.verdict, _verdictReason: r.verdictReason,
@@ -856,16 +895,16 @@ function Step5({form, onBack}) {
         const recLines = [];
         let recLine = "";
         for (const w2 of recWords) {
-          if ((recLine + " " + w2).length > 80) { recLines.push(recLine); recLine = w2; }
+          if ((recLine + " " + w2).length > 72) { recLines.push(recLine); recLine = w2; }
           else recLine = recLine ? recLine + " " + w2 : w2;
         }
         if (recLine) recLines.push(recLine);
-        const recH = recLines.length * 14 + 16;
+        const recH = recLines.length * 15 + 20;
         p.drawRectangle({x:M-5, y:y-recH+10, width:W-2*M+10, height:recH, color:rgb(0.86,0.97,0.88)});
-        let recY = y - 2;
+        let recY = y - 4;
         for (const l of recLines) {
           p.drawText(l, {x:M+5, y:recY, size:9, font:fontBold, color:rgb(0.06,0.4,0.2)});
-          recY -= 14;
+          recY -= 15;
         }
         y = recY - 10;
       }
