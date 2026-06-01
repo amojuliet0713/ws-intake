@@ -201,8 +201,9 @@ Return ONLY valid JSON (no markdown, no backticks) with these exact keys:
       if(!res.ok){const err=await res.json().catch(()=>({}));throw new Error(err.error?.message||err.error||"Server error "+res.status);}
       const data=await res.json();
       const raw=data.content.map(c=>c.text||"").join("");
-      const s=raw.indexOf("{");const e2=raw.lastIndexOf("}");
-      const clean=s!==-1&&e2!==-1?raw.slice(s,e2+1):raw;
+      const clean1=raw.replace(/```json/g,"").replace(/```/g,"").trim();
+      const s=clean1.indexOf("{");const e2=clean1.lastIndexOf("}");
+      const clean=s!==-1&&e2!==-1?clean1.slice(s,e2+1):clean1;
       const extracted=JSON.parse(clean);
       onExtracted({...EMPTY_FORM,...extracted});
     }catch(e){setError("Extraction failed: "+e.message);}
@@ -383,8 +384,9 @@ Return ONLY valid JSON (no markdown):
       if(!res.ok){const err=await res.json().catch(()=>({}));throw new Error(err.error?.message||"Server error "+res.status);}
       const data=await res.json();
       const raw=data.content.map(c=>c.text||"").join("");
-      const s=raw.indexOf("{");const e2=raw.lastIndexOf("}");
-      const clean=s!==-1&&e2!==-1?raw.slice(s,e2+1):raw;
+      const clean1=raw.replace(/```json/g,"").replace(/```/g,"").trim();
+      const s=clean1.indexOf("{");const e2=clean1.lastIndexOf("}");
+      const clean=s!==-1&&e2!==-1?clean1.slice(s,e2+1):clean1;
       const r=JSON.parse(clean);
       setForm(f=>({...f,_verdict:r.verdict,_verdictReason:r.verdictReason,_meritScore:r.meritScore,_damagesPotential:r.damagesPotential,_riskLevel:r.riskLevel,_solUrgency:r.solUrgency,_claimsAnalysis:r.claimsAnalysis,_solNote:r.solNote,_strengths:r.strengths||[],_concerns:r.concerns||[],_nextSteps:r.nextSteps||[],credibilityNotes:r.staffNotes||form.credibilityNotes,recommendation:r.recommendation||form.recommendation}));
     }catch(e){setError("Analysis failed: "+e.message);}
