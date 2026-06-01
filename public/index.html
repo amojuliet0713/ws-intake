@@ -703,90 +703,170 @@ function Step5({form, onBack}) {
     setGenerating(true);
     try {
       const { PDFDocument, rgb, StandardFonts } = PDFLib;
-      const existingPdfBytes = await fetch("/Employment_Intake_Form.pdf").then(r => r.arrayBuffer()).catch(()=>null);
-      
-      let pdfDoc;
-      if (existingPdfBytes) {
-        pdfDoc = await PDFDocument.load(existingPdfBytes);
-      } else {
-        pdfDoc = await PDFDocument.create();
-      }
-
+      const pdfDoc = await PDFDocument.create();
       const font = await pdfDoc.embedFont(StandardFonts.Helvetica);
       const fontBold = await pdfDoc.embedFont(StandardFonts.HelveticaBold);
-      const pages = pdfDoc.getPages();
-      
-      const addText = (page, text, x, y, size=9, bold=false, color=rgb(0,0,0)) => {
-        if (!text) return;
-        const f = bold ? fontBold : font;
-        const str = String(text).replace(/[^ -~]/g, " ").slice(0, 120);
-        try { page.drawText(str, {x, y, size, font: f, color}); } catch(e) {}
+      const navy = rgb(0.1, 0.1, 0.24);
+      const red = rgb(0.75, 0.22, 0.17);
+      const black = rgb(0, 0, 0);
+      const gray = rgb(0.4, 0.4, 0.4);
+      const W = 612, H = 792, M = 50;
+
+      const addPage = () => {
+        const p = pdfDoc.addPage([W, H]);
+        // Header bar
+        p.drawRectangle({x:0, y:H-60, width:W, height:60, color:navy});
+        p.drawText("WILLIAMS & SEEMEN, APLC", {x:M, y:H-28, size:13, font:fontBold, color:rgb(1,1,1)});
+        p.drawText("Employment Law Intake Questionnaire — Confidential & Privileged", {x:M, y:H-45, size:8, font, color:rgb(0.8,0.8,0.8)});
+        // Footer
+        p.drawLine({start:{x:M,y:30}, end:{x:W-M,y:30}, thickness:0.5, color:gray});
+        p.drawText("Williams & Seemen, APLC  |  16255 Ventura Blvd., Suite 1106, Encino, CA 91436  |  (818) 898-3300", {x:M, y:18, size:7, font, color:gray});
+        return p;
       };
 
-      const p1 = pages[0];
-      if (p1) {
-        const {height} = p1.getSize();
-        const py = (pdfY) => height - pdfY;
-        addText(p1, form.intakeDate, 140, py(240));
-        addText(p1, form.intakeMethod, 390, py(240));
-        addText(p1, form.intakeStaff, 140, py(313));
-        addText(p1, form.referralSource, 390, py(313));
-        addText(p1, form.attorneyAssigned, 140, py(387));
-        addText(p1, form.followUpDate, 390, py(387));
-        addText(p1, form.fullName, 120, py(518));
-        addText(p1, form.preferredName, 120, py(558));
-        addText(p1, form.dob, 120, py(598));
-        addText(p1, form.address, 120, py(638));
-        addText(p1, form.primaryPhone, 120, py(678));
-        addText(p1, form.altPhone, 120, py(718));
-      }
-      const p2 = pages[1];
-      if (p2) {
-        const {height} = p2.getSize();
-        const py = (pdfY) => height - pdfY;
-        addText(p2, form.email, 120, py(68));
-        addText(p2, form.bestContact, 120, py(108));
-        addText(p2, form.preferredLanguage, 120, py(148));
-        addText(p2, form.emergencyContact, 120, py(188));
-        addText(p2, form.defendant, 120, py(368));
-        addText(p2, form.jobTitle, 120, py(448));
-        addText(p2, form.payRate, 120, py(488));
-        addText(p2, `${form.startDate||""} to ${form.terminationDate||""}`, 120, py(568));
-        addText(p2, form.supervisor, 120, py(608));
-      }
+      const safe = (v) => String(v||"").replace(/[^ -~]/g," ").slice(0,200);
+      
+      const field = (p, label, value, x, y, w=240) => {
+        p.drawText(label + ":", {x, y, size:7.5, font:fontBold, color:gray});
+        p.drawLine({start:{x,y:y-3}, end:{x:x+w,y:y-3}, thickness:0.3, color:rgb(0.8,0.8,0.8)});
+        if (value) p.drawText(safe(value), {x, y:y-13, size:9, font, color:black});
+        return y - 30;
+      };
 
-      // Page 3 - employment status continued
-      const p3 = pages[2];
-      if (p3) {
-        const {height} = p3.getSize();
-        const py = (y) => height - y;
-        addText(p3, form.terminationEmployerReason, 54, py(168), 8);
-        addText(p3, form.terminationClientBelief, 54, py(228), 8);
-      }
+      const section = (p, title, y) => {
+        p.drawRectangle({x:M-5, y:y-4, width:W-2*M+10, height:18, color:navy});
+        p.drawText(title.toUpperCase(), {x:M, y:y+1, size:9, font:fontBold, color:rgb(1,1,1)});
+        return y - 24;
+      };
 
-      // Page 6 - Wage & hour
-      const p6 = pages[5];
-      if (p6) {
-        const {height} = p6.getSize();
-        const py = (y) => height - y;
-        addText(p6, form.mealRestDetails, 54, py(288), 8);
-        addText(p6, form.overtimeDetails, 54, py(368), 8);
-      }
-
-      // Last page - staff notes
-      const lastPage = pages[pages.length-1];
-      if (lastPage) {
-        const {height} = lastPage.getSize();
-        const py = (y) => height - y;
-        addText(lastPage, form.credibilityNotes, 54, py(100), 8);
-        addText(lastPage, form.redFlags, 54, py(200), 8);
-        addText(lastPage, form.caseStrengths, 54, py(300), 8);
-        addText(lastPage, form.actionItems, 54, py(400), 8);
-        if (form.recommendation) {
-          addText(lastPage, "✓ " + form.recommendation, 54, py(550), 9, true, rgb(0.06,0.40,0.20));
+      const wrap = (p, label, value, x, y, w=500, lineH=13) => {
+        p.drawText(label + ":", {x, y, size:7.5, font:fontBold, color:gray});
+        y -= 14;
+        if (!value) return y - 4;
+        const words = safe(value).split(" ");
+        let line = "", lines = [];
+        for (const w2 of words) {
+          if ((line + " " + w2).length > 85) { lines.push(line); line = w2; }
+          else line = line ? line + " " + w2 : w2;
         }
-        addText(lastPage, new Date().toLocaleDateString(), 400, py(550));
+        if (line) lines.push(line);
+        for (const l of lines.slice(0,6)) {
+          p.drawText(l, {x, y, size:9, font, color:black});
+          y -= lineH;
+        }
+        return y - 4;
+      };
+
+      // ── PAGE 1: Header + Contact ──────────────────────────────────────────
+      let p = addPage();
+      let y = H - 80;
+      p.drawText("INTAKE DATE: " + safe(form.intakeDate||new Date().toLocaleDateString()), {x:M, y, size:9, font, color:black});
+      p.drawText("METHOD: " + safe(form.intakeMethod), {x:250, y, size:9, font, color:black});
+      p.drawText("STAFF: " + safe(form.intakeStaff), {x:420, y, size:9, font, color:black});
+      y -= 20;
+
+      y = section(p, "Prospective New Client Contact Information", y);
+      y -= 8;
+      y = field(p, "Full Legal Name", form.fullName, M, y);
+      y = field(p, "Preferred Name", form.preferredName, M, y);
+      y = field(p, "Date of Birth", form.dob, M, y);
+      y = field(p, "Primary Phone", form.primaryPhone, M, y);
+      y = field(p, "Email Address", form.email, M, y);
+      y = field(p, "Alternate Phone", form.altPhone, M, y);
+      y = wrap(p, "Mailing Address", form.address, M, y);
+      y = field(p, "Best Time to Contact", form.bestContact, M, y);
+      y = field(p, "Preferred Language", form.preferredLanguage, M, y);
+      y = wrap(p, "Emergency Contact", form.emergencyContact, M, y);
+      y = field(p, "Prior Attorney", form.priorAttorney||form.priorAttorneyYN, M, y);
+      y -= 10;
+
+      // ── PAGE 2: Employment ────────────────────────────────────────────────
+      p = addPage(); y = H - 80;
+      y = section(p, "Employment Status with Defendant", y); y -= 8;
+      y = wrap(p, "Defendant / Employer", form.defendant, M, y);
+      y = field(p, "Government Employer?", form.isGovtEmployer, M, y);
+      y = field(p, "Job Title", form.jobTitle, M, y);
+      y = field(p, "Pay Rate", form.payRate, M, y);
+      y = field(p, "Employment Type", form.atWillOrContract, M, y);
+      y = field(p, "Start Date", form.startDate, M, y);
+      y = field(p, "Termination Date", form.terminationDate, M, y);
+      y = wrap(p, "Last Supervisor", form.supervisor, M, y);
+      y = field(p, "Employment Status", form.employmentStatus, M, y);
+      y = field(p, "Arbitration Agreement", form.arbitrationAgreement, M, y);
+      y = field(p, "Union Member", form.unionMember, M, y);
+      y = field(p, "Severance Offered", form.severanceOffered, M, y);
+      y -= 10;
+      y = wrap(p, "Employer's Stated Reason for Termination", form.terminationEmployerReason, M, y);
+      y = wrap(p, "Client's Belief as to Actual Reason", form.terminationClientBelief, M, y);
+
+      // ── PAGE 3: Claims ────────────────────────────────────────────────────
+      p = addPage(); y = H - 80;
+      y = section(p, "Basis of Case — FEHA & Discrimination", y); y -= 8;
+      y = field(p, "Discrimination Alleged?", form.discriminationBelief, M, y);
+      y = wrap(p, "Protected Classes", (form.discriminationClasses||[]).join(", "), M, y);
+      y = wrap(p, "Evidence Supporting Discrimination", form.discriminationEvidence, M, y);
+      y = wrap(p, "Oral Comments / Animus", form.oralAnimus, M, y);
+      y = wrap(p, "Written Comments / Animus", form.writtenAnimus, M, y);
+      y = wrap(p, "Harassment Details", form.harassmentDetails, M, y);
+      y -= 10;
+      y = section(p, "Disability & Protected Leave", y); y -= 8;
+      y = field(p, "Disability / Medical Condition?", form.hasDisability, M, y);
+      y = wrap(p, "Nature of Condition", form.disabilityNature, M, y);
+      y = field(p, "Date of Onset", form.disabilityDate, M, y);
+      y = wrap(p, "Accommodation Requested", form.accommodationRequested, M, y);
+      y = field(p, "Accommodation Granted?", form.accommodationGranted, M, y);
+      y = wrap(p, "Leave Types", (form.leaveTypes||[]).join(", "), M, y);
+      y = wrap(p, "Reason for Leave", form.leaveReason, M, y);
+      y = field(p, "Terminated After Leave?", form.terminatedAfterLeave, M, y);
+
+      // ── PAGE 4: Wage & Hour + Evidence ───────────────────────────────────
+      p = addPage(); y = H - 80;
+      y = section(p, "Wage & Hour", y); y -= 8;
+      y = field(p, "Exempt Status", form.exemptStatus, M, y);
+      y = field(p, "Hourly or Salaried?", form.hourlyOrSalary, M, y);
+      y = field(p, "Meal & Rest Breaks Provided?", form.mealRestBreaks, M, y);
+      y = wrap(p, "Break Details", form.mealRestDetails, M, y);
+      y = field(p, "Overtime Paid?", form.overtimePaid, M, y);
+      y = wrap(p, "Overtime Details", form.overtimeDetails, M, y);
+      y = field(p, "Final Paycheck Timely?", form.finalPaycheckTimely, M, y);
+      y -= 10;
+      y = section(p, "Witnesses & Evidence", y); y -= 8;
+      y = wrap(p, "Witnesses", form.witnessNames, M, y);
+      y = wrap(p, "Documents in Possession", (form.evidenceDocs||[]).join(", "), M, y);
+      y = wrap(p, "Recordings", form.audioRecordings, M, y);
+      y -= 10;
+      y = section(p, "Damages", y); y -= 8;
+      y = wrap(p, "Lost Wages", form.lostWages, M, y);
+      y = wrap(p, "Lost Benefits", form.lostBenefits, M, y);
+      y = wrap(p, "Post-Termination Earnings", form.postTermEarnings, M, y);
+      y = wrap(p, "Medical Treatment", form.medicalTreatment, M, y);
+      y = wrap(p, "Emotional Distress", form.emotionalDistress, M, y);
+
+      // ── PAGE 5: Staff Notes & AI Analysis ────────────────────────────────
+      p = addPage(); y = H - 80;
+      y = section(p, "Intake Staff Notes & AI Case Analysis", y); y -= 8;
+      y = wrap(p, "Credibility / Demeanor", form.credibilityNotes, M, y);
+      y = wrap(p, "Red Flags", form.redFlags, M, y);
+      y = wrap(p, "Case Strengths", form.caseStrengths, M, y);
+      y = wrap(p, "Action Items", form.actionItems, M, y);
+      y -= 10;
+      if (form.recommendation) {
+        p.drawRectangle({x:M-5, y:y-20, width:W-2*M+10, height:30, color:rgb(0.86,0.97,0.88)});
+        p.drawText("RECOMMENDATION: " + safe(form.recommendation), {x:M+5, y:y-10, size:11, font:fontBold, color:rgb(0.06,0.4,0.2)});
+        y -= 40;
       }
+      if (form._verdict) {
+        const vColor = form._verdict==="ACCEPT" ? rgb(0.06,0.4,0.2) : form._verdict==="DECLINE" ? rgb(0.75,0.1,0.1) : rgb(0.5,0.3,0);
+        p.drawText("AI VERDICT: " + form._verdict + " — " + safe(form._verdictReason), {x:M, y, size:9, font:fontBold, color:vColor});
+        y -= 16;
+        if (form._meritScore) { p.drawText("Merit Score: " + form._meritScore + "/10  |  Damages: " + (form._damagesPotential||"") + "  |  Risk: " + (form._riskLevel||"") + "  |  SOL Urgency: " + (form._solUrgency||""), {x:M, y, size:9, font, color:black}); y -= 16; }
+        if (form._claimsAnalysis) { y = wrap(p, "Claims Analysis", form._claimsAnalysis, M, y); }
+        if ((form._strengths||[]).length) { y = wrap(p, "Strengths", form._strengths.join("; "), M, y); }
+        if ((form._concerns||[]).length) { y = wrap(p, "Concerns", form._concerns.join("; "), M, y); }
+        if (form._solNote) { y = wrap(p, "SOL Note", form._solNote, M, y); }
+      }
+      p.drawText("Generated: " + new Date().toLocaleString(), {x:M, y:50, size:7, font, color:gray});
+      p.drawText("CONFIDENTIAL & PRIVILEGED — ATTORNEY WORK PRODUCT", {x:M, y:38, size:7, font:fontBold, color:red});
 
       const pdfBytes = await pdfDoc.save();
       const blob = new Blob([pdfBytes], {type:"application/pdf"});
