@@ -109,7 +109,7 @@ app.get("/intake-template.pdf", (req, res) => {
   else res.status(404).send("Template not found");
 });
 
-app.get("*", (req, res) => {
+app.get("/{*splat}", (req, res) => {
   res.sendFile(path.join(__dirname, "public", "index.html"));
 });
 
